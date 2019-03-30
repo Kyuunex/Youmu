@@ -14,3 +14,8 @@ This bot is built using discord.py rewrite library and uses sqlite3 database.
 6. Before using, you need to create a folder called `data` and create `token.txt` and `osuapikey.txt` in it. Then put your bot token and osu api key in the files. 
 8. Run `run.py` with command line, like `python run.py` on windows or `python3 run.py` on linux or use the batch file or however you want. It's recommended to run it in a loop so it restarts when it exits. Built-in updater requires this.
 
+---
+
+## Configuration
+Figure it out yourself.
+
