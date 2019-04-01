@@ -27,10 +27,10 @@ async def compare(result, lookupvalue, tablename, lookupkey, updatedb = True, re
         return None
     else:
         if result:
-            if updatedb:
-                await dbhandler.query(["UPDATE %s SET contents = ? WHERE %s = ?" % (tablename, lookupkey), [json.dumps(result), lookupvalue]])
             localdata = json.loads((await dbhandler.query(["SELECT contents FROM %s WHERE %s = ?" % (tablename, lookupkey), [lookupvalue]]))[0][0])
             comparison = await comparelists(result, localdata, reverse)
+            if updatedb:
+                await dbhandler.query(["UPDATE %s SET contents = ? WHERE %s = ?" % (tablename, lookupkey), [json.dumps(result), lookupvalue]])
             if comparison:
                 return comparison
             else:
