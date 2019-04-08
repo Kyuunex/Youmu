@@ -16,8 +16,8 @@ from modules import rankfeed
 from modules import usereventfeed
 
 client = commands.Bot(command_prefix='.')
-client.remove_command('help')
-appversion = "b20190330"
+#client.remove_command('help')
+appversion = "b20190408"
 
 
 @client.event
@@ -112,6 +112,9 @@ async def cgroupfeed(ctx, action):
         if action == "add":
             await dbhandler.query(["INSERT INTO groupfeed_channellist VALUES (?)", [str(ctx.channel.id)]])
             await ctx.send(":ok_hand:")
+        elif action == "remove":
+            await ctx.send("placeholder")
+            #TODO: Add groupfeed remove
     else:
         await ctx.send(embed=await permissions.error())
 
@@ -122,6 +125,9 @@ async def crankfeed(ctx, action):
         if action == "add":
             await dbhandler.query(["INSERT INTO rankfeed_channellist VALUES (?)", [str(ctx.channel.id)]])
             await ctx.send(":ok_hand:")
+        elif action == "remove":
+            await ctx.send("placeholder")
+            #TODO: Add rankfeed remove
     else:
         await ctx.send(embed=await permissions.error())
 
@@ -132,6 +138,10 @@ async def cusereventfeed(ctx, action, osuid, channels):
         if action == "track":
             await dbhandler.query(["INSERT INTO usereventfeed_tracklist VALUES (?,?)", [osuid, channels]])
             await ctx.send(":ok_hand:")
+        elif action == "untrack":
+            await ctx.send("placeholder")
+            #TODO: Add usereventfeed remove
+            #TODO: implement csv
     else:
         await ctx.send(embed=await permissions.error())
 
