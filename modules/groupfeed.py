@@ -83,7 +83,7 @@ async def main(client):
         print(time.strftime('%X %x %Z')+' | groupfeed')
         groupfeedchannellist = await dbhandler.query("SELECT channelid FROM groupfeed_channellist")
         if groupfeedchannellist:
-            await groupcheck(client, groupfeedchannellist, "7", "Quality Assurance Team")
+            await groupcheck(client, groupfeedchannellist, "7", "Nominator Administration Team")
             await asyncio.sleep(5)
             await groupcheck(client, groupfeedchannellist, "28", "Beatmap Nomination Group")
             await asyncio.sleep(120)
