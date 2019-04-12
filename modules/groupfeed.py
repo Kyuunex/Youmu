@@ -46,12 +46,17 @@ async def groupmain(client, user, groupname, groupurl, description, groupfeedcha
         osuprofile = {}
         osuprofile['username'] = "restricted user"
         osuprofile['user_id'] = user
+        flagsign = ""
+    else:
+        if osuprofile['country']:
+            flagsign = ":flag_%s:" % (osuprofile['country'].lower())
+        else:
+            flagsign = ""
     embed = await groupmember(
         osuprofile,
         groupname,
         groupurl,
-        description % ("[%s](https://osu.ppy.sh/users/%s)" % (osuprofile['username'],
-                                                              str(osuprofile['user_id'])), "[%s](%s)" % (groupname, groupurl)),
+        description % (flagsign, "[%s](https://osu.ppy.sh/users/%s)" % (osuprofile['username'], str(osuprofile['user_id'])), "[%s](%s)" % (groupname, groupurl)),
         color
     )
     for groupfeedchannelid in groupfeedchannellist:
@@ -67,11 +72,11 @@ async def groupcheck(client, groupfeedchannellist, groupid, groupname):
         if checkadditions:
             for newuser in checkadditions:
                 print("groupfeed | %s | added %s" % (groupname, newuser))
-                await groupmain(client, newuser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "**%s** \nhas been added to \nthe **%s**", groupfeedchannellist, 0xffbd0e)
+                await groupmain(client, newuser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been added to \nthe **%s**", groupfeedchannellist, 0xffbd0e)
         if checkremovals:
             for removeduser in checkremovals:
                 print("groupfeed | %s | removed %s" % (groupname, removeduser))
-                await groupmain(client, removeduser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "**%s** \nhas been removed from \nthe **%s**", groupfeedchannellist, 0x2c0e6c)
+                await groupmain(client, removeduser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been removed from \nthe **%s**", groupfeedchannellist, 0x2c0e6c)
     else:
         print('groupfeed connection problems?')
         return None

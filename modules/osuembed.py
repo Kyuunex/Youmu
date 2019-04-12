@@ -49,23 +49,20 @@ async def mapset(beatmapsetobject, color = 0xbd3661):
 async def osuprofile(osuprofile):
     if osuprofile:
         try:
-            usercountry = pycountry.countries.get(
-                alpha_2=osuprofile['country'])
-            flag = ":flag_%s: %s\n" % (
-                osuprofile['country'].lower(), usercountry.name)
+            if osuprofile['country']:
+                usercountry = pycountry.countries.get(alpha_2=osuprofile['country'])
+                flag = ":flag_%s: %s\n" % (osuprofile['country'].lower(), usercountry.name)
         except:
             flag = ""
         if osuprofile['pp_raw']:
-            performance = "%spp (#%s)\n" % (
-                str(osuprofile['pp_raw']), str(osuprofile['pp_rank']))
+            performance = "%spp (#%s)\n" % (str(osuprofile['pp_raw']), str(osuprofile['pp_rank']))
         else:
             performance = ""
         osuprofileembed = discord.Embed(
             title=osuprofile['username'],
             url='https://osu.ppy.sh/users/%s' % (str(osuprofile['user_id'])),
             color=0xbd3661,
-            description=str("%s%sJoined osu on: %s" %
-                            (flag, performance, str(osuprofile['join_date'])))
+            description=str("%s%sJoined osu on: %s" % (flag, performance, str(osuprofile['join_date'])))
         )
         osuprofileembed.set_thumbnail(
             url='https://a.ppy.sh/%s' % (str(osuprofile['user_id']))
