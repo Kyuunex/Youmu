@@ -89,7 +89,7 @@ async def groupcheck(client, groupfeedchannellist, groupid, groupname):
 
 async def main(client):
     try:
-        #await asyncio.sleep(120)
+        await asyncio.sleep(120)
         print(time.strftime('%X %x %Z')+' | groupfeed')
         groupfeedchannellist = await dbhandler.query("SELECT channelid FROM groupfeed_channellist")
         if groupfeedchannellist:
