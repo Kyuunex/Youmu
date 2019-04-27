@@ -65,8 +65,13 @@ async def groupmain(client, user, groupname, groupurl, description, groupfeedcha
 
 
 async def groupcheck(client, groupfeedchannellist, groupid, groupname):
-    userlist = await osuwebapipreview.groups(groupid)
-    if userlist:
+    requestbuffer = await osuwebapipreview.groups(groupid)
+    if requestbuffer:
+        userlist = []
+        for i in requestbuffer['online']:
+            userlist.append(str(i["id"]))
+        for u in requestbuffer['offline']:
+            userlist.append(str(u["id"]))
         checkadditions = await compare(userlist, groupid, 'groupfeed_json_data', 'feedtype', False, False)
         checkremovals = await compare(userlist, groupid, 'groupfeed_json_data', 'feedtype', True, True)
         if checkadditions:
@@ -84,7 +89,7 @@ async def groupcheck(client, groupfeedchannellist, groupid, groupname):
 
 async def main(client):
     try:
-        await asyncio.sleep(120)
+        #await asyncio.sleep(120)
         print(time.strftime('%X %x %Z')+' | groupfeed')
         groupfeedchannellist = await dbhandler.query("SELECT channelid FROM groupfeed_channellist")
         if groupfeedchannellist:

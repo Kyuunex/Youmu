@@ -49,14 +49,9 @@ async def discussion(mapset):
 async def groups(groupid):
     httpcontents = await rawrequest('groups', '', groupid)
     if httpcontents:
-        if "js-react--user-card" in httpcontents:
-            messyarray = httpcontents.split("data-user=\"")
-            actuallist = []
-            for i in messyarray:
-                parsedmemberjson = (i.split("\">"))[0]
-                if not "<!DOCTYPE html>" in parsedmemberjson:
-                    actuallist.append(str(int((json.loads(html.unescape(parsedmemberjson)))["id"])))
-            return list(actuallist)
+        if "json-users" in httpcontents:
+            result = await customparser('<script id="json-users" type="application/json">', '</script>', httpcontents)
+            return json.loads(result)
         else:
             return None
     else:
