@@ -94,8 +94,10 @@ async def main(client):
         groupfeedchannellist = await dbhandler.query("SELECT channelid FROM groupfeed_channellist")
         if groupfeedchannellist:
             await groupcheck(client, groupfeedchannellist, "7", "Nominator Administration Team")
+            await asyncio.sleep(120)
+            await groupcheck(client, groupfeedchannellist, "28", "Beatmap Nominators")
             await asyncio.sleep(5)
-            await groupcheck(client, groupfeedchannellist, "28", "Beatmap Nomination Group")
+            await groupcheck(client, groupfeedchannellist, "32", "Beatmap Nominators (Probationary)")
             await asyncio.sleep(120)
             await groupcheck(client, groupfeedchannellist, "4", "Global Moderation Team")
             await asyncio.sleep(120)
@@ -103,7 +105,7 @@ async def main(client):
             await asyncio.sleep(120)
             await groupcheck(client, groupfeedchannellist, "16", "osu! Alumni")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannellist, "22", "Support Team Redux")
+            await groupcheck(client, groupfeedchannellist, "22", "Support Team")
         await asyncio.sleep(1600)
     except Exception as e:
         print(time.strftime('%X %x %Z'))
