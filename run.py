@@ -17,7 +17,7 @@ from modules import usereventfeed
 
 client = commands.Bot(command_prefix='.')
 #client.remove_command('help')
-appversion = "b20190507"
+appversion = "b20190509"
 
 
 @client.event
@@ -79,6 +79,17 @@ async def sql(ctx, *, query):
         if len(query) > 0:
             response = await dbhandler.query(query)
             await ctx.send(response)
+    else:
+        await ctx.send(embed=await permissions.ownererror())
+
+
+@client.command(name="leave", brief="Leave the current guild.", description="", pass_context=True)
+async def leave(ctx):
+    if await permissions.checkowner(ctx.message.author.id):
+        try:
+            await ctx.guild.leave()
+        except Exception as e:
+            await ctx.send(e)
     else:
         await ctx.send(embed=await permissions.ownererror())
 
