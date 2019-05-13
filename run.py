@@ -17,7 +17,7 @@ from modules import usereventfeed
 
 client = commands.Bot(command_prefix='.')
 #client.remove_command('help')
-appversion = "b20190509"
+appversion = "b20190513"
 
 
 @client.event
@@ -29,13 +29,13 @@ async def on_ready():
     if not os.path.exists('data/maindb.sqlite3'):
         appinfo = await client.application_info()
         await dbhandler.query("CREATE TABLE config (setting, parent, value, flag)")
-        await dbhandler.query("CREATE TABLE admins (discordid, permissions)")
-        await dbhandler.query("CREATE TABLE rankfeed_channellist (channelid)")
-        await dbhandler.query("CREATE TABLE rankfeed_rankedmaps (mapsetid)")
-        await dbhandler.query("CREATE TABLE usereventfeed_tracklist (osuid, channellist)")
-        await dbhandler.query("CREATE TABLE usereventfeed_json_data (osuid, contents)")
-        await dbhandler.query("CREATE TABLE groupfeed_channellist (channelid)")
-        await dbhandler.query("CREATE TABLE groupfeed_json_data (feedtype, contents)")
+        await dbhandler.query("CREATE TABLE admins (user_id, permissions)")
+        await dbhandler.query("CREATE TABLE rankfeed_channel_list (channel_id)")
+        await dbhandler.query("CREATE TABLE rankfeed_ranked_maps (mapset_id)")
+        await dbhandler.query("CREATE TABLE user_event_feed_track_list (osu_id, channel_list)")
+        await dbhandler.query("CREATE TABLE user_event_feed_json_data (osu_id, contents)")
+        await dbhandler.query("CREATE TABLE groupfeed_channel_list (channel_id)")
+        await dbhandler.query("CREATE TABLE groupfeed_json_data (feed_type, contents)")
         await dbhandler.query(["INSERT INTO admins VALUES (?, ?)", [str(appinfo.owner.id), "1"]])
 
 
@@ -45,9 +45,9 @@ async def adminlist(ctx):
 
 
 @client.command(name="makeadmin", brief="Add a user to bot admin list.", description="", pass_context=True)
-async def makeadmin(ctx, discordid: str):
+async def makeadmin(ctx, user_id: str):
     if await permissions.checkowner(ctx.message.author.id):
-        await dbhandler.query(["INSERT INTO admins VALUES (?, ?)", [str(discordid), "0"]])
+        await dbhandler.query(["INSERT INTO admins VALUES (?, ?)", [str(user_id), "0"]])
         await ctx.send(":ok_hand:")
     else:
         await ctx.send(embed=await permissions.ownererror())
@@ -95,9 +95,9 @@ async def leave(ctx):
 
 
 @client.command(name="mapset", brief="Show mapset info.", description="", pass_context=True)
-async def mapset(ctx, mapsetid: str, text: str = None):
+async def mapset(ctx, mapset_id: str, text: str = None):
     if await permissions.check(ctx.message.author.id):
-        embed = await osuembed.mapset(await osuapi.get_beatmaps(mapsetid))
+        embed = await osuembed.mapset(await osuapi.get_beatmaps(mapset_id))
         if embed:
             await ctx.send(content=text, embed=embed)
             # await ctx.message.delete()
@@ -121,7 +121,7 @@ async def user(ctx, *, username):
 async def cgroupfeed(ctx, action):
     if await permissions.check(ctx.message.author.id):
         if action == "add":
-            await dbhandler.query(["INSERT INTO groupfeed_channellist VALUES (?)", [str(ctx.channel.id)]])
+            await dbhandler.query(["INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
             await ctx.send(":ok_hand:")
         elif action == "remove":
             await ctx.send("placeholder")
@@ -134,7 +134,7 @@ async def cgroupfeed(ctx, action):
 async def crankfeed(ctx, action):
     if await permissions.check(ctx.message.author.id):
         if action == "add":
-            await dbhandler.query(["INSERT INTO rankfeed_channellist VALUES (?)", [str(ctx.channel.id)]])
+            await dbhandler.query(["INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
             await ctx.send(":ok_hand:")
         elif action == "remove":
             await ctx.send("placeholder")
@@ -144,10 +144,10 @@ async def crankfeed(ctx, action):
 
 
 @client.command(name="usereventfeed", brief="Track/untrack mapping activity of a specified user.", description="", pass_context=True)
-async def cusereventfeed(ctx, action, osuid, channels):
+async def cusereventfeed(ctx, action, osu_id, channels):
     if await permissions.check(ctx.message.author.id):
         if action == "track":
-            await dbhandler.query(["INSERT INTO usereventfeed_tracklist VALUES (?,?)", [osuid, channels]])
+            await dbhandler.query(["INSERT INTO user_event_feed_track_list VALUES (?,?)", [osu_id, channels]])
             await ctx.send(":ok_hand:")
         elif action == "untrack":
             await ctx.send("placeholder")

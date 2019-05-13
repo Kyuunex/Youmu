@@ -27,19 +27,19 @@ async def fetch():
 async def main(client):
     try:
         await asyncio.sleep(10)
-        rankfeedchannellist = await dbhandler.query("SELECT channelid FROM rankfeed_channellist")
-        if rankfeedchannellist:
+        rankfeedchannel_list = await dbhandler.query("SELECT channel_id FROM rankfeed_channel_list")
+        if rankfeedchannel_list:
             mapfeed = feedparser.parse(await fetch())
             for maplist in mapfeed['entries']:
-                mapsetid = maplist['link'].split('http://osu.ppy.sh/s/')[1]
-                lookupmapindb = await dbhandler.query(["SELECT mapsetid FROM rankfeed_rankedmaps WHERE mapsetid = ?", [str(mapsetid), ]])
+                mapset_id = maplist['link'].split('http://osu.ppy.sh/s/')[1]
+                lookupmapindb = await dbhandler.query(["SELECT mapset_id FROM rankfeed_ranked_maps WHERE mapset_id = ?", [str(mapset_id), ]])
                 if not lookupmapindb:
-                    embed = await osuembed.mapset(await osuapi.get_beatmaps(mapsetid))
+                    embed = await osuembed.mapset(await osuapi.get_beatmaps(mapset_id))
                     if embed:
-                        for rankfeedchannelid in rankfeedchannellist:
-                            channel = client.get_channel(int(rankfeedchannelid[0]))
+                        for rankfeedchannel_id in rankfeedchannel_list:
+                            channel = client.get_channel(int(rankfeedchannel_id[0]))
                             await channel.send(embed=embed)
-                        await dbhandler.query(["INSERT INTO rankfeed_rankedmaps VALUES (?)", [str(mapsetid)]])
+                        await dbhandler.query(["INSERT INTO rankfeed_ranked_maps VALUES (?)", [str(mapset_id)]])
         await asyncio.sleep(1600)
     except Exception as e:
         print(time.strftime('%X %x %Z'))

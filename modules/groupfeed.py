@@ -40,7 +40,7 @@ async def compare(result, lookupvalue, tablename, lookupkey, updatedb = True, re
             return None
 
 
-async def groupmain(client, user, groupname, groupurl, description, groupfeedchannellist, color):
+async def groupmain(client, user, groupname, groupurl, description, groupfeedchannel_list, color):
     osuprofile = await osuapi.get_user(user)
     if not osuprofile:
         osuprofile = {}
@@ -59,12 +59,12 @@ async def groupmain(client, user, groupname, groupurl, description, groupfeedcha
         description % (flagsign, "[%s](https://osu.ppy.sh/users/%s)" % (osuprofile['username'], str(osuprofile['user_id'])), "[%s](%s)" % (groupname, groupurl)),
         color
     )
-    for groupfeedchannelid in groupfeedchannellist:
-        channel = client.get_channel(int(groupfeedchannelid[0]))
+    for groupfeedchannel_id in groupfeedchannel_list:
+        channel = client.get_channel(int(groupfeedchannel_id[0]))
         await channel.send(embed=embed)
 
 
-async def groupcheck(client, groupfeedchannellist, groupid, groupname):
+async def groupcheck(client, groupfeedchannel_list, groupid, groupname):
     requestbuffer = await osuwebapipreview.groups(groupid)
     if requestbuffer:
         userlist = []
@@ -72,16 +72,16 @@ async def groupcheck(client, groupfeedchannellist, groupid, groupname):
             userlist.append(str(i["id"]))
         for u in requestbuffer['offline']:
             userlist.append(str(u["id"]))
-        checkadditions = await compare(userlist, groupid, 'groupfeed_json_data', 'feedtype', False, False)
-        checkremovals = await compare(userlist, groupid, 'groupfeed_json_data', 'feedtype', True, True)
+        checkadditions = await compare(userlist, groupid, 'groupfeed_json_data', 'feed_type', False, False)
+        checkremovals = await compare(userlist, groupid, 'groupfeed_json_data', 'feed_type', True, True)
         if checkadditions:
             for newuser in checkadditions:
                 print("groupfeed | %s | added %s" % (groupname, newuser))
-                await groupmain(client, newuser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been added to \nthe **%s**", groupfeedchannellist, 0xffbd0e)
+                await groupmain(client, newuser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been added to \nthe **%s**", groupfeedchannel_list, 0xffbd0e)
         if checkremovals:
             for removeduser in checkremovals:
                 print("groupfeed | %s | removed %s" % (groupname, removeduser))
-                await groupmain(client, removeduser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been removed from \nthe **%s**", groupfeedchannellist, 0x2c0e6c)
+                await groupmain(client, removeduser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been removed from \nthe **%s**", groupfeedchannel_list, 0x2c0e6c)
     else:
         print('groupfeed connection problems?')
         return None
@@ -91,21 +91,21 @@ async def main(client):
     try:
         await asyncio.sleep(120)
         print(time.strftime('%X %x %Z')+' | groupfeed')
-        groupfeedchannellist = await dbhandler.query("SELECT channelid FROM groupfeed_channellist")
-        if groupfeedchannellist:
-            await groupcheck(client, groupfeedchannellist, "7", "Nomination Assessment Team")
+        groupfeedchannel_list = await dbhandler.query("SELECT channel_id FROM groupfeed_channel_list")
+        if groupfeedchannel_list:
+            await groupcheck(client, groupfeedchannel_list, "7", "Nomination Assessment Team")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannellist, "28", "Beatmap Nominators")
+            await groupcheck(client, groupfeedchannel_list, "28", "Beatmap Nominators")
             await asyncio.sleep(5)
-            await groupcheck(client, groupfeedchannellist, "32", "Beatmap Nominators (Probationary)")
+            await groupcheck(client, groupfeedchannel_list, "32", "Beatmap Nominators (Probationary)")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannellist, "4", "Global Moderation Team")
+            await groupcheck(client, groupfeedchannel_list, "4", "Global Moderation Team")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannellist, "11", "Developers")
+            await groupcheck(client, groupfeedchannel_list, "11", "Developers")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannellist, "16", "osu! Alumni")
+            await groupcheck(client, groupfeedchannel_list, "16", "osu! Alumni")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannellist, "22", "Support Team")
+            await groupcheck(client, groupfeedchannel_list, "22", "Support Team")
         await asyncio.sleep(1600)
     except Exception as e:
         print(time.strftime('%X %x %Z'))
