@@ -68,10 +68,8 @@ async def groupcheck(client, groupfeedchannel_list, groupid, groupname):
     requestbuffer = await osuwebapipreview.groups(groupid)
     if requestbuffer:
         userlist = []
-        for i in requestbuffer['online']:
+        for i in requestbuffer:
             userlist.append(str(i["id"]))
-        for u in requestbuffer['offline']:
-            userlist.append(str(u["id"]))
         checkadditions = await compare(userlist, groupid, 'groupfeed_json_data', 'feed_type', False, False)
         checkremovals = await compare(userlist, groupid, 'groupfeed_json_data', 'feed_type', True, True)
         if checkadditions:
