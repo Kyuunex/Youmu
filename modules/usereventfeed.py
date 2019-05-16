@@ -62,7 +62,7 @@ async def usereventtrack(client, channel, osuprofile, table):
                 if eventcolor:
                     embed = await osuembed.mapset(await osuapi.get_beatmaps(newevent['beatmapset_id']), eventcolor)
                     if embed:
-                        display_text = unescape(re.sub('<[^<]+?>', '', newevent['display_html']))
+                        display_text = (unescape(re.sub('<[^<]+?>', '', newevent['display_html']))).replace("@", "")
                         try:
                             print(display_text)
                         except:
