@@ -29,16 +29,20 @@ async def mapset(beatmapsetobject, color = 0xbd3661):
         )
         for onediff in beatmapsetobject:
             if onediff["mode"] == "0":
-                gamemode = "osu!"
+                gamemode = "std"
             elif onediff["mode"] == "1":
                 gamemode = "Taiko"
             elif onediff["mode"] == "2":
                 gamemode = "CtB"
             elif onediff["mode"] == "3":
-                gamemode = "osu!mania"
+                gamemode = "mania"
+            if not onediff["difficultyrating"] == None:
+                sr = "%s ☆ %s" % (str(round(float(onediff["difficultyrating"]), 2)), gamemode)
+            else:
+                sr = "None"
             mapsetembed.add_field(
                 name=onediff["version"], 
-                value="%s [%s]" % (str(round(float(onediff["difficultyrating"]), 2)), gamemode), 
+                value=sr, 
                 inline=True
             )
         return mapsetembed
