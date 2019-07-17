@@ -76,7 +76,7 @@ async def main(client):
                 await dbhandler.query(["INSERT INTO rssfeed_posted_entries VALUES (?, ?)", [str(url), str(entry_id)]])
         print(time.strftime('%X %x %Z'))
         print("finished rss check")
-    await asyncio.sleep(1600)
+    await asyncio.sleep(1200)
 
 
 async def add(client, ctx, url):
