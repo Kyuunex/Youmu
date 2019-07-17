@@ -14,10 +14,11 @@ from modules import dbhandler
 from modules import groupfeed
 from modules import rankfeed
 from modules import usereventfeed
+from modules import rssfeed
 
 client = commands.Bot(command_prefix='.')
 #client.remove_command('help')
-appversion = "b20190515"
+appversion = "b20190718"
 
 
 @client.event
@@ -30,6 +31,8 @@ async def on_ready():
         appinfo = await client.application_info()
         await dbhandler.query("CREATE TABLE config (setting, parent, value, flag)")
         await dbhandler.query("CREATE TABLE admins (user_id, permissions)")
+        await dbhandler.query("CREATE TABLE rssfeed_track_list (url, channel_id)")
+        await dbhandler.query("CREATE TABLE rssfeed_posted_entries (url, posted_entry)")
         await dbhandler.query("CREATE TABLE rankfeed_channel_list (channel_id)")
         await dbhandler.query("CREATE TABLE rankfeed_ranked_maps (mapset_id)")
         await dbhandler.query("CREATE TABLE user_event_feed_track_list (osu_id, channel_list)")
@@ -117,6 +120,30 @@ async def user(ctx, *, username):
         await ctx.send(content='`No user found with that username`')
 
 
+@client.command(name="rssadd", brief="", description="", pass_context=True)
+async def crssadd(ctx, *, url):
+    if await permissions.check(ctx.message.author.id):
+        await rssfeed.add(client, ctx, url)
+    else:
+        await ctx.send(embed=await permissions.error())
+
+
+@client.command(name="rssremove", brief="", description="", pass_context=True)
+async def crssremove(ctx, *, url):
+    if await permissions.check(ctx.message.author.id):
+        await rssfeed.remove(client, ctx, url)
+    else:
+        await ctx.send(embed=await permissions.error())
+
+
+@client.command(name="rsslist", brief="", description="", pass_context=True)
+async def crsslist(ctx, everywhere = None):
+    if await permissions.check(ctx.message.author.id):
+        await rssfeed.tracklist(ctx, everywhere)
+    else:
+        await ctx.send(embed=await permissions.error())
+
+
 @client.command(name="groupfeed", brief="Add/remove a groupfeed in the current channel.", description="", pass_context=True)
 async def cgroupfeed(ctx, action):
     if await permissions.check(ctx.message.author.id):
@@ -175,7 +202,14 @@ async def usereventfeed_background_loop():
         await usereventfeed.main(client)
 
 
+async def rssfeed_background_loop():
+    await client.wait_until_ready()
+    while not client.is_closed():
+        await rssfeed.main(client)
+
+
 client.loop.create_task(groupfeed_background_loop())
 client.loop.create_task(rankfeed_background_loop())
 client.loop.create_task(usereventfeed_background_loop())
+client.loop.create_task(rssfeed_background_loop())
 client.run(open("data/token.txt", "r+").read(), bot=True)
