@@ -6,8 +6,8 @@ This bot is built using discord.py rewrite library and uses sqlite3 database.
 
 ## Installation Instructions
 
-1. Unpack files
-2. Install git.
+1. Install git.
+2. Clone this repo using this command git clone https://github.com/Kyuunex/Youmu.git
 3. Install `python 3.6.7` or newer
 4. Install `discord.py rewrite library` using this command `python -m pip install -U discord.py[voice]` for Windows and `python3 -m pip install -U discord.py[voice]` for Linux.
 5. Install `feedparser` and `pycountry` using this command `pip install <package name>`. (`pip3` on linux)
