@@ -37,14 +37,6 @@ async def rss_entry_embed(rss_object, color=0xbd3661):
         return None
 
 
-async def comparelists(list2, list1):
-    difference = []
-    for i in list1:
-        if not i in list2:
-            difference.append(i)
-    return difference
-
-
 async def fetch(url):
     try:
         async with aiohttp.ClientSession() as session:
@@ -65,15 +57,17 @@ async def main(client):
     await asyncio.sleep(10)
     rssfeed_entries = await dbhandler.query("SELECT * FROM rssfeed_track_list")
     if rssfeed_entries:
-        url = rssfeed_entries[0][0]
-        online_entries = (feedparser.parse(await fetch(url)))['entries']
-        for one_entry in online_entries:
-            entry_id = one_entry['id']
-            if not await dbhandler.query(["SELECT * FROM rssfeed_posted_entries WHERE url = ? AND posted_entry = ?", [str(url), str(entry_id)]]):
-                for one_channel in rssfeed_entries[0][1].split(","):
-                    channel = client.get_channel(int(one_channel))
-                    await channel.send(embed=await rss_entry_embed(one_entry))
-                await dbhandler.query(["INSERT INTO rssfeed_posted_entries VALUES (?, ?)", [str(url), str(entry_id)]])
+        for rssfeed_entry in rssfeed_entries:
+            url = rssfeed_entry[0]
+            print("checking %s" % (url))
+            online_entries = (feedparser.parse(await fetch(url)))['entries']
+            for one_entry in online_entries:
+                entry_id = one_entry['id']
+                if not await dbhandler.query(["SELECT * FROM rssfeed_posted_entries WHERE url = ? AND posted_entry = ?", [str(url), str(entry_id)]]):
+                    for one_channel in rssfeed_entry[1].split(","):
+                        channel = client.get_channel(int(one_channel))
+                        await channel.send(embed=await rss_entry_embed(one_entry))
+                    await dbhandler.query(["INSERT INTO rssfeed_posted_entries VALUES (?, ?)", [str(url), str(entry_id)]])
         print(time.strftime('%X %x %Z'))
         print("finished rss check")
     await asyncio.sleep(1200)
