@@ -62,7 +62,7 @@ async def main(client):
                         for one_channel in channel_list:
                             channel = client.get_channel(int(one_channel[0]))
                             await channel.send(embed=await rss_entry_embed(one_entry))
-                        #db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
+                        db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
             else:
                 db.query(["DELETE FROM rssfeed_tracklist WHERE url = ?", [str(url)]])
                 print("%s is not tracked in any channel so I am untracking it" % (str(url)))
