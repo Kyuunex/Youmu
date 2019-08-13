@@ -130,7 +130,7 @@ async def user(ctx, *, username):
 @client.command(name="rankfeedadd", brief="Add a rankfeed in the current channel", description="", pass_context=True)
 async def rankfeed_add(ctx):
     if permissions.check(ctx.message.author.id):
-        rankfeed.add(ctx.channel)
+        await rankfeed.add(ctx.channel)
     else:
         await ctx.send(embed=permissions.error())
 
@@ -138,7 +138,7 @@ async def rankfeed_add(ctx):
 @client.command(name="rankfeedremove", brief="Remove a rankfeed from the current channel", description="", pass_context=True)
 async def rankfeed_remove(ctx):
     if permissions.check(ctx.message.author.id):
-        rankfeed.remove(ctx.channel)
+        await rankfeed.remove(ctx.channel)
     else:
         await ctx.send(embed=permissions.error())
 
