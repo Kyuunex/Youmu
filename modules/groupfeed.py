@@ -2,9 +2,9 @@ import json
 import time
 import asyncio
 import discord
-from modules import dbhandler
-from modules import osuapi
-from modules import osuwebapipreview
+from modules import db
+from modules.connections import osu as osu
+from modules.connections import osuweb as osuweb
 
 
 async def comparelists(list1, list2, reverse = False):
@@ -22,15 +22,15 @@ async def comparelists(list1, list2, reverse = False):
 
 
 async def compare(result, lookupvalue, tablename, lookupkey, updatedb = True, reverse = False):
-    if not await dbhandler.query(["SELECT %s FROM %s WHERE %s = ?" % (lookupkey, tablename, lookupkey), [lookupvalue]]):
-        await dbhandler.query(["INSERT INTO %s VALUES (?,?)" % (tablename), [lookupvalue, json.dumps(result)]])
+    if not db.query(["SELECT %s FROM %s WHERE %s = ?" % (lookupkey, tablename, lookupkey), [lookupvalue]]):
+        db.query(["INSERT INTO %s VALUES (?,?)" % (tablename), [lookupvalue, json.dumps(result)]])
         return None
     else:
         if result:
-            localdata = json.loads((await dbhandler.query(["SELECT contents FROM %s WHERE %s = ?" % (tablename, lookupkey), [lookupvalue]]))[0][0])
+            localdata = json.loads((db.query(["SELECT contents FROM %s WHERE %s = ?" % (tablename, lookupkey), [lookupvalue]]))[0][0])
             comparison = await comparelists(result, localdata, reverse)
             if updatedb:
-                await dbhandler.query(["UPDATE %s SET contents = ? WHERE %s = ?" % (tablename, lookupkey), [json.dumps(result), lookupvalue]])
+                db.query(["UPDATE %s SET contents = ? WHERE %s = ?" % (tablename, lookupkey), [json.dumps(result), lookupvalue]])
             if comparison:
                 return comparison
             else:
@@ -40,46 +40,62 @@ async def compare(result, lookupvalue, tablename, lookupkey, updatedb = True, re
             return None
 
 
-async def groupmain(client, user, groupname, groupurl, description, groupfeedchannel_list, color):
-    osuprofile = await osuapi.get_user(user)
-    if not osuprofile:
-        osuprofile = {}
-        osuprofile['username'] = "restricted user"
-        osuprofile['user_id'] = user
-        flagsign = ""
+async def get_changes(group_members, group_id):
+    changes = []
+    userlist = []
+    for i in group_members:
+        userlist.append(str(i["id"]))
+    check_additions = await compare(userlist, group_id, 'groupfeed_json_data', 'group_id', False, False)
+    check_removals = await compare(userlist, group_id, 'groupfeed_json_data', 'group_id', True, True)
+    if check_additions:
+        for new_user in check_additions:
+            changes.append(["added", new_user, "Someone"])
+    if check_removals:
+        for removed_user in check_removals:
+            changes.append(["removed", removed_user, "Someone"])
+    return changes
+
+
+async def execute_event(client, groupfeed_channel_list, event, group_id, group_name):
+    if event[0] == "removed":
+        print("groupfeed | %s | removed %s" % (group_name, event[2]))
+        description_template = "%s **%s**\nhas been removed from\nthe **%s**"
+        color = 0x2c0e6c
+    elif event[0] == "added":
+        print("groupfeed | %s | added %s" % (group_name, event[2]))
+        description_template = "%s **%s**\nhas been added to\nthe **%s**"
+        color = 0xffbd0e
+
+    user = await osu.get_user(u=event[1])
+    if user:
+        flagsign = ":flag_%s:" % (user.country.lower())
+        username = user.name
     else:
-        if osuprofile['country']:
-            flagsign = ":flag_%s:" % (osuprofile['country'].lower())
-        else:
-            flagsign = ""
-    embed = await groupmember(
-        osuprofile,
-        groupname,
-        groupurl,
-        description % (flagsign, "[%s](https://osu.ppy.sh/users/%s)" % (osuprofile['username'], str(osuprofile['user_id'])), "[%s](%s)" % (groupname, groupurl)),
-        color
-    )
-    for groupfeedchannel_id in groupfeedchannel_list:
-        channel = client.get_channel(int(groupfeedchannel_id[0]))
-        await channel.send(embed=embed)
+        flagsign = ":gay_pride_flag:"
+        username = event[2]
+        #description_template += "\n **%s got restricted btw lol**" % (username)
+        description_template = "%s **%s**\n**has gotten restricted lol**\nand has been removed from\nthe **%s**"
+        color = 0x9e0000
+
+    what_group = "[%s](%s)" % (group_name, ("https://osu.ppy.sh/groups/%s" % (group_id)))
+    what_user = "[%s](https://osu.ppy.sh/users/%s)" % (username, event[1])
+
+    description = description_template % (flagsign, what_user, what_group)
+
+    embed = await group_member(event[1], description, color)
+    for groupfeed_channel_id in groupfeed_channel_list:
+        channel = client.get_channel(int(groupfeed_channel_id[0]))
+        if channel:
+            await channel.send(embed=embed)
 
 
-async def groupcheck(client, groupfeedchannel_list, groupid, groupname):
-    requestbuffer = await osuwebapipreview.groups(groupid)
-    if requestbuffer:
-        userlist = []
-        for i in requestbuffer:
-            userlist.append(str(i["id"]))
-        checkadditions = await compare(userlist, groupid, 'groupfeed_json_data', 'feed_type', False, False)
-        checkremovals = await compare(userlist, groupid, 'groupfeed_json_data', 'feed_type', True, True)
-        if checkadditions:
-            for newuser in checkadditions:
-                print("groupfeed | %s | added %s" % (groupname, newuser))
-                await groupmain(client, newuser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been added to \nthe **%s**", groupfeedchannel_list, 0xffbd0e)
-        if checkremovals:
-            for removeduser in checkremovals:
-                print("groupfeed | %s | removed %s" % (groupname, removeduser))
-                await groupmain(client, removeduser, groupname, "https://osu.ppy.sh/groups/%s" % (groupid), "%s **%s** \nhas been removed from \nthe **%s**", groupfeedchannel_list, 0x2c0e6c)
+async def check_group(client, groupfeed_channel_list, group_id, group_name):
+    group_members = await osuweb.groups(group_id)
+    if group_members:
+        events = await get_changes(group_members, group_id)
+        if events:
+            for event in events:
+                await execute_event(client, groupfeed_channel_list, event, group_id, group_name)
     else:
         print('groupfeed connection problems?')
         return None
@@ -87,23 +103,24 @@ async def groupcheck(client, groupfeedchannel_list, groupid, groupname):
 
 async def main(client):
     try:
-        await asyncio.sleep(120)
-        print(time.strftime('%X %x %Z')+' | groupfeed')
-        groupfeedchannel_list = await dbhandler.query("SELECT channel_id FROM groupfeed_channel_list")
-        if groupfeedchannel_list:
-            await groupcheck(client, groupfeedchannel_list, "7", "Nomination Assessment Team")
+        await asyncio.sleep(5)
+        groupfeed_channel_list = db.query("SELECT channel_id FROM groupfeed_channel_list")
+        if groupfeed_channel_list:
+            print(time.strftime('%X %x %Z')+' | performing groupfeed check')
+            await check_group(client, groupfeed_channel_list, "7", "Nomination Assessment Team")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannel_list, "28", "Beatmap Nominators")
+            await check_group(client, groupfeed_channel_list, "28", "Beatmap Nominators")
             await asyncio.sleep(5)
-            await groupcheck(client, groupfeedchannel_list, "32", "Beatmap Nominators (Probationary)")
+            await check_group(client, groupfeed_channel_list, "32", "Beatmap Nominators (Probationary)")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannel_list, "4", "Global Moderation Team")
+            await check_group(client, groupfeed_channel_list, "4", "Global Moderation Team")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannel_list, "11", "Developers")
+            await check_group(client, groupfeed_channel_list, "11", "Developers")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannel_list, "16", "osu! Alumni")
+            await check_group(client, groupfeed_channel_list, "16", "osu! Alumni")
             await asyncio.sleep(120)
-            await groupcheck(client, groupfeedchannel_list, "22", "Support Team")
+            await check_group(client, groupfeed_channel_list, "22", "Support Team")
+            print(time.strftime('%X %x %Z')+' | finished groupfeed check')
         await asyncio.sleep(1600)
     except Exception as e:
         print(time.strftime('%X %x %Z'))
@@ -112,22 +129,12 @@ async def main(client):
         await asyncio.sleep(3600)
 
 
-async def groupmember(osuprofile, groupname, groupurl, description, color):
-    if osuprofile:
-        osuprofileembed = discord.Embed(
-            # title=groupname,
-            # url=groupurl,
-            description=description,
-            color=color
-        )
-        # osuprofileembed.set_author(
-        #    name=osuprofile['username'],
-        #    url='https://osu.ppy.sh/users/%s' % (str(osuprofile['user_id'])),
-        #    icon_url='https://a.ppy.sh/%s' % (str(osuprofile['user_id']))
-        #    )
-        osuprofileembed.set_thumbnail(
-            url='https://a.ppy.sh/%s' % (str(osuprofile['user_id']))
-        )
-        return osuprofileembed
-    else:
-        return None
+async def group_member(user_id, description, color):
+    embed = discord.Embed(
+        description=description,
+        color=color
+    )
+    embed.set_thumbnail(
+        url='https://a.ppy.sh/%s' % (user_id)
+    )
+    return embed

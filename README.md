@@ -1,21 +1,23 @@
 # Youmu
 
-This bot is built using discord.py rewrite library and uses sqlite3 database.
+Youmu is a osu! related discord bot that tracks: group changes, new ranked maps, any user's mapping activity. Additionally there's RSS feed tracking functionality.
+
+This bot is built using discord.py and uses sqlite3 database.
 
 ---
 
 ## Installation Instructions
 
-1. Install git.
-2. Clone this repo using this command `git clone https://github.com/Kyuunex/Youmu.git`
-3. Install `python 3.6.7` or newer
-4. Install `discord.py rewrite library` using this command `python -m pip install -U discord.py[voice]` for Windows and `python3 -m pip install -U discord.py[voice]` for Linux.
-5. Install `feedparser` and `pycountry` using this command `pip install <package name>`. (`pip3` on linux)
-6. Before using, you need to create a folder called `data` and create `token.txt` and `osuapikey.txt` in it. Then put your bot token and osu api key in the files. 
-8. Run `run.py` with command line, like `python run.py` on windows or `python3 run.py` on linux or use the batch file or however you want. It's recommended to run it in a loop so it restarts when it exits. Built-in updater requires this.
+1. Install `git` and `Python 3.5.3` (or newer) if you don't already have them.
+2. Clone this repository using this command `git clone https://github.com/Kyuunex/Youmu.git`.
+3. Install `discord.py` using this command `python3 -m pip install -U discord.py[voice]`.
+4. `pip3 install pycountry feedparser`.
+5. `pip3 install git+https://github.com/Kyuunex/aioosuapi.git@v1`
+6. `pip3 install git+https://github.com/Kyuunex/aioosuapi.git@v2`
+7. `pip3 install git+https://github.com/Kyuunex/osudiscordpyembed.git`
+8. Create a folder named `data`, then create `token.txt` and `osu_api_key.txt` inside it. Then put your bot token and osu api key in them. 
+9. To start the bot, run `youmu.bat` if you are on windows or `youmu.sh` if you are on linux. Alternatively, you can manually run `run.py` file but I recommend using the included launchers because it starts the bot in a loop which is required by the `.restart` and `.update` commands.
 
----
+## How to use
 
-## Configuration
-Figure it out yourself.
-
+1. Use `.help` to bring up the help menu.

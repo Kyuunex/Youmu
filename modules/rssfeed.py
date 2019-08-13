@@ -6,34 +6,27 @@ import discord
 import re
 from html import unescape
 
-from modules import dbhandler
+from modules import db
 
 
 async def rss_entry_embed(rss_object, color=0xbd3661):
-    try:
-        if rss_object:
-            embed = discord.Embed(
-                title=rss_object['title'],
-                url=rss_object['link'],
-                description=(unescape(re.sub('<[^<]+?>', '', rss_object['summary']))).replace("@", ""),
-                color=int(color)
-            )
+    if rss_object:
+        print(rss_object)
+        embed = discord.Embed(
+            title=rss_object['title'],
+            url=rss_object['link'],
+            description=(unescape(re.sub('<[^<]+?>', '', rss_object['summary']))).replace("@", ""),
+            color=int(color)
+        )
+        if 'author' in rss_object:
             embed.set_author(
                 name=rss_object['author']
             )
-            # embed.set_thumbnail(
-            #     url=''
-            # )
-            embed.set_footer(
-                text=rss_object['published']
-            )
-            return embed
-        else:
-            return None
-    except Exception as e:
-        print(time.strftime('%X %x %Z'))
-        print("in rssfeed.rss_entry_embed")
-        print(e)
+        embed.set_footer(
+            text=rss_object['published']
+        )
+        return embed
+    else:
         return None
 
 
@@ -55,79 +48,59 @@ async def fetch(url):
 
 async def main(client):
     await asyncio.sleep(10)
-    rssfeed_entries = await dbhandler.query("SELECT * FROM rssfeed_track_list")
+    rssfeed_entries = db.query("SELECT url FROM rssfeed_tracklist")
     if rssfeed_entries:
         for rssfeed_entry in rssfeed_entries:
             url = rssfeed_entry[0]
-            print("checking %s" % (url))
-            online_entries = (feedparser.parse(await fetch(url)))['entries']
-            for one_entry in online_entries:
-                entry_id = one_entry['id']
-                if not await dbhandler.query(["SELECT * FROM rssfeed_posted_entries WHERE url = ? AND posted_entry = ?", [str(url), str(entry_id)]]):
-                    for one_channel in rssfeed_entry[1].split(","):
-                        channel = client.get_channel(int(one_channel))
-                        await channel.send(embed=await rss_entry_embed(one_entry))
-                    await dbhandler.query(["INSERT INTO rssfeed_posted_entries VALUES (?, ?)", [str(url), str(entry_id)]])
+            channel_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(url)]])
+            if channel_list:
+                print("checking %s" % (url))
+                online_entries = (feedparser.parse(await fetch(url)))['entries']
+                for one_entry in online_entries:
+                    entry_id = one_entry['id']
+                    if not db.query(["SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?", [str(url), str(entry_id)]]):
+                        for one_channel in channel_list:
+                            channel = client.get_channel(int(one_channel[0]))
+                            await channel.send(embed=await rss_entry_embed(one_entry))
+                        #db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
+            else:
+                db.query(["DELETE FROM rssfeed_tracklist WHERE url = ?", [str(url)]])
+                print("%s is not tracked in any channel so I am untracking it" % (str(url)))
         print(time.strftime('%X %x %Z'))
         print("finished rss check")
     await asyncio.sleep(1200)
 
 
-async def add(client, ctx, url):
+async def add(channel, url):
     online_entries = (feedparser.parse(await fetch(url)))['entries']
     if online_entries:
-        trackinfo = await dbhandler.query(["SELECT * FROM rssfeed_track_list WHERE url = ?", [str(url)]])
-        if not trackinfo:
-            await dbhandler.query(["INSERT INTO rssfeed_track_list VALUES (?, ?)", [url, str(ctx.channel.id)]])
-            for one_entry in online_entries:
-                entry_id = one_entry['id']
-                if not await dbhandler.query(["SELECT * FROM rssfeed_posted_entries WHERE url = ? AND posted_entry = ?", [str(url), str(entry_id)]]):
-                    await dbhandler.query(["INSERT INTO rssfeed_posted_entries VALUES (?, ?)", [str(url), str(entry_id)]])
-            await ctx.send("added")
+        if not db.query(["SELECT * FROM rssfeed_tracklist WHERE url = ?", [str(url)]]):
+            db.query(["INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)]])
+
+        for one_entry in online_entries:
+            entry_id = one_entry['id']
+            if not db.query(["SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?", [str(url), str(entry_id)]]):
+                db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
+
+        if not db.query(["SELECT * FROM rssfeed_channels WHERE channel_id = ? AND url = ?", [str(channel.id), str(url)]]):
+            db.query(["INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)]])
+            await channel.send(content='Feed `%s` is now tracked in this channel' % (url))
         else:
-            newcsv = await csv_add(trackinfo[0][1], str(ctx.channel.id))
-            await dbhandler.query(["UPDATE rssfeed_track_list SET channel_id = ? WHERE url = ?", [newcsv, str(url)]])
-            await ctx.send("added")
+            await channel.send(content='Feed `%s` is already tracked in this channel' % (url))
 
 
-async def remove(client, ctx, url):
-    trackinfo = await dbhandler.query(["SELECT * FROM rssfeed_track_list WHERE url = ?", [str(url)]])
-    if trackinfo:
-        newcsv = await csv_remove(trackinfo[0][1], str(ctx.channel.id))
-        if newcsv:
-            await dbhandler.query(["UPDATE rssfeed_track_list SET channel_id = ? WHERE url = ?", [newcsv, str(url)]])
-        else:
-            await dbhandler.query(["DELETE FROM rssfeed_track_list WHERE url = ?", [str(url)]])
-        await ctx.send("don")
+async def remove(channel, url):
+    db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
+    await channel.send(content='Feed `%s` is no longer tracked in this channel' % (url))
 
 
-async def tracklist(ctx, everywhere=None):
-    tracklist = await dbhandler.query("SELECT * FROM rssfeed_track_list")
+async def print_tracklist(channel, everywhere = None):
+    tracklist = db.query("SELECT * FROM rssfeed_tracklist")
     if tracklist:
-        for oneentry in tracklist:
-            if (str(ctx.channel.id) in oneentry[1]) or (everywhere):
-                channellist = await csv_wrap_entries(oneentry[1])
-                await ctx.send(content='channels: %s | url: %s' % (channellist, oneentry[0]))
-
-
-async def csv_add(csv_current_entries, csv_new_entries):
-    entry_list = csv_current_entries.split(",")
-    for one_new_entry in str(csv_new_entries).split(","):
-        if not one_new_entry in entry_list:
-            entry_list.append(one_new_entry)
-    return ",".join(entry_list)
-
-
-async def csv_remove(csv_current_entries, csv_new_entries):
-    entry_list = csv_current_entries.split(",")
-    for one_new_entry in str(csv_new_entries).split(","):
-        if one_new_entry in entry_list:
-            entry_list.remove(one_new_entry)
-    return ",".join(entry_list)
-
-
-async def csv_wrap_entries(csv_current_entries, wrapper="<#%s>"):
-    entry_string = ""
-    for one_entry in csv_current_entries.split(","):
-        entry_string += ((wrapper+" ") % (one_entry))
-    return entry_string
+        for one_entry in tracklist:
+            destination_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(one_entry[0])]])
+            destination_list_str = ""
+            for destination_id in destination_list:
+                destination_list_str += ("<#%s> " % (str(destination_id[0])))
+            if (str(channel.id) in destination_list_str) or (everywhere):
+                await channel.send(content='url: `%s` | channels: %s' % (one_entry[0], destination_list_str))

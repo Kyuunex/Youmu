@@ -1,6 +1,6 @@
 @echo off
 title Youmu
 :loop
-python run.py
+python youmu.py
 goto loop
 pause
