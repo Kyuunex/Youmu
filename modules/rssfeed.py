@@ -11,7 +11,6 @@ from modules import db
 
 async def rss_entry_embed(rss_object, color=0xbd3661):
     if rss_object:
-        print(rss_object)
         embed = discord.Embed(
             title=rss_object['title'],
             url=rss_object['link'],
