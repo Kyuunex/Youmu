@@ -65,6 +65,7 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
             await ctx.send(embed=permissions.error())
 
     async def usereventfeed_background_loop(self):
+        print("UEF Loop launched!")
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:
@@ -99,11 +100,11 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
             db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
             db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)]])
 
-    async def check_events(self, channel_list, user, history_table_name):
+    async def check_events(self, channel_list, user, history_table_name, channel_id = 0):
         print(time.strftime('%X %x %Z')+" | currently checking %s" % (user.name))
         for event in user.events:
             if not db.query(["SELECT event_id FROM %s WHERE event_id = ?" % (history_table_name), [str(event.id)]]):
-                db.query(["INSERT INTO %s VALUES (?, ?)" % (history_table_name), [str(user.id), str(event.id)]])
+                db.query(["INSERT INTO %s VALUES (?, ?, ?)" % (history_table_name), [str(user.id), str(event.id), str(channel_id)]])
                 event_color = await self.get_event_color(event.display_text)
                 if event_color:
                     result = await osu.get_beatmapset(s=event.beatmapset_id)

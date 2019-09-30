@@ -120,6 +120,7 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
             return None
 
     async def groupfeed_background_loop(self):
+        print("GroupFeed launched!")
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:

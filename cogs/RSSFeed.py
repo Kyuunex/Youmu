@@ -99,6 +99,7 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
             return None
 
     async def rssfeed_background_loop(self):
+        print("RSSFeed Loop launched!")
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             await asyncio.sleep(10)
