@@ -1,15 +1,11 @@
 #!/usr/bin/env python3
 
 import discord
-import asyncio
 from discord.ext import commands
 import os
 
-from modules import permissions
-from osuembed import osuembed
 from modules import db
 
-from modules.connections import osu as osu
 from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
