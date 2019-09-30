@@ -78,7 +78,7 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
                 await asyncio.sleep(1200)
             except Exception as e:
                 print(time.strftime('%X %x %Z'))
-                print("in membertrack")
+                print("in usereventfeed_background_loop")
                 print(e)
                 await asyncio.sleep(7200)
 
