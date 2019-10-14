@@ -109,7 +109,7 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
                 await channel.send(embed=embed)
 
     async def check_group(self, groupfeed_channel_list, group_id, group_name):
-        group_members = await osuweb.groups(group_id)
+        group_members = await osuweb.get_group_members(group_id)
         if group_members:
             events = await self.get_changes(group_members, group_id)
             if events:
