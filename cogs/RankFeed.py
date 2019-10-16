@@ -8,7 +8,7 @@ from discord.ext import commands
 from modules import db
 from modules import permissions
 from modules.connections import osu as osu
-from osuembed import osuembed
+import osuembed
 
 
 class RankFeed(commands.Cog, name="RankFeed"):

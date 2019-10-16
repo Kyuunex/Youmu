@@ -10,7 +10,7 @@ from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
 command_prefix = '.'
-appversion = "a20191014"
+appversion = "a20191016"
 client = commands.Bot(command_prefix=command_prefix, description='Youmu %s' % (appversion))
 
 if not os.path.exists(database_file):
