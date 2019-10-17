@@ -15,20 +15,16 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
         self.bot.loop.create_task(self.groupfeed_background_loop())
 
     @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def add(self, ctx):
-        if permissions.check(ctx.message.author.id):
-            db.query(["INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
-            await ctx.send(":ok_hand:")
-        else:
-            await ctx.send(embed=permissions.error())
+        db.query(["INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
+        await ctx.send(":ok_hand:")
 
     @commands.command(name="groupfeed_remove", brief="Remove a groupfeed from the current channel", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def remove(self, ctx):
-        if permissions.check(ctx.message.author.id):
-            db.query(["DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
-            await ctx.send(":ok_hand:")
-        else:
-            await ctx.send(embed=permissions.error())
+        db.query(["DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
+        await ctx.send(":ok_hand:")
 
     async def comparelists(self, list1, list2, reverse = False):
         difference = []
@@ -120,7 +116,7 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
             return None
 
     async def groupfeed_background_loop(self):
-        print("GroupFeed launched!")
+        print("GroupFeed Loop launched!")
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:

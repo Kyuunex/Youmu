@@ -18,51 +18,45 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
         self.bot.loop.create_task(self.rssfeed_background_loop())
 
     @commands.command(name="rss_add", brief="Subscribe to an RSS feed in the current channel", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def add(self, ctx, *, url):
-        if permissions.check(ctx.message.author.id):
-            channel = ctx.channel
-            online_entries = (feedparser.parse(await self.fetch(url)))['entries']
-            if online_entries:
-                if not db.query(["SELECT * FROM rssfeed_tracklist WHERE url = ?", [str(url)]]):
-                    db.query(["INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)]])
+        channel = ctx.channel
+        online_entries = (feedparser.parse(await self.fetch(url)))['entries']
+        if online_entries:
+            if not db.query(["SELECT * FROM rssfeed_tracklist WHERE url = ?", [str(url)]]):
+                db.query(["INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)]])
 
-                for one_entry in online_entries:
-                    entry_id = one_entry['id']
-                    if not db.query(["SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?", [str(url), str(entry_id)]]):
-                        db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
+            for one_entry in online_entries:
+                entry_id = one_entry['id']
+                if not db.query(["SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?", [str(url), str(entry_id)]]):
+                    db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
 
-                if not db.query(["SELECT * FROM rssfeed_channels WHERE channel_id = ? AND url = ?", [str(channel.id), str(url)]]):
-                    db.query(["INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)]])
-                    await channel.send(content='Feed `%s` is now tracked in this channel' % (url))
-                else:
-                    await channel.send(content='Feed `%s` is already tracked in this channel' % (url))
-        else:
-            await ctx.send(embed=permissions.error())
+            if not db.query(["SELECT * FROM rssfeed_channels WHERE channel_id = ? AND url = ?", [str(channel.id), str(url)]]):
+                db.query(["INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)]])
+                await channel.send(content='Feed `%s` is now tracked in this channel' % (url))
+            else:
+                await channel.send(content='Feed `%s` is already tracked in this channel' % (url))
 
     @commands.command(name="rss_remove", brief="Unsubscribe to an RSS feed in the current channel", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def remove(self, ctx, *, url):
-        if permissions.check(ctx.message.author.id):
-            channel = ctx.channel
-            db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
-            await channel.send(content='Feed `%s` is no longer tracked in this channel' % (url))
-        else:
-            await ctx.send(embed=permissions.error())
+        channel = ctx.channel
+        db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
+        await channel.send(content='Feed `%s` is no longer tracked in this channel' % (url))
 
     @commands.command(name="rss_list", brief="Show a list of all RSS feeds being tracked", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def tracklist(self, ctx, everywhere = None):
-        if permissions.check(ctx.message.author.id):
-            channel = ctx.channel
-            tracklist = db.query("SELECT * FROM rssfeed_tracklist")
-            if tracklist:
-                for one_entry in tracklist:
-                    destination_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(one_entry[0])]])
-                    destination_list_str = ""
-                    for destination_id in destination_list:
-                        destination_list_str += ("<#%s> " % (str(destination_id[0])))
-                    if (str(channel.id) in destination_list_str) or (everywhere):
-                        await channel.send(content='url: `%s` | channels: %s' % (one_entry[0], destination_list_str))
-        else:
-            await ctx.send(embed=permissions.error())
+        channel = ctx.channel
+        tracklist = db.query("SELECT * FROM rssfeed_tracklist")
+        if tracklist:
+            for one_entry in tracklist:
+                destination_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(one_entry[0])]])
+                destination_list_str = ""
+                for destination_id in destination_list:
+                    destination_list_str += ("<#%s> " % (str(destination_id[0])))
+                if (str(channel.id) in destination_list_str) or (everywhere):
+                    await channel.send(content='url: `%s` | channels: %s' % (one_entry[0], destination_list_str))
 
     async def rss_entry_embed(self, rss_object, color=0xbd3661):
         if rss_object:

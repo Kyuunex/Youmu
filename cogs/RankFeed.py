@@ -17,28 +17,24 @@ class RankFeed(commands.Cog, name="RankFeed"):
         self.bot.loop.create_task(self.rankfeed_background_loop())
 
     @commands.command(name="rankfeed_add", brief="Add a rankfeed in the current channel", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def add(self, ctx):
-        if permissions.check(ctx.message.author.id):
-            fresh_entries = await self.fetch_rss()
-            if fresh_entries:
-                map_feed = feedparser.parse(fresh_entries)
-                mapset_list = self.build_mapset_list(map_feed)
-                for mapset_id in mapset_list:
-                    if not db.query(["SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?", [str(mapset_id)]]):
-                        db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
-                if not db.query(["SELECT * FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]]):
-                    db.query(["INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
-                    await ctx.send(":ok_hand:")
-        else:
-            await ctx.send(embed=permissions.error())
+        fresh_entries = await self.fetch_rss()
+        if fresh_entries:
+            map_feed = feedparser.parse(fresh_entries)
+            mapset_list = self.build_mapset_list(map_feed)
+            for mapset_id in mapset_list:
+                if not db.query(["SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?", [str(mapset_id)]]):
+                    db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
+            if not db.query(["SELECT * FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]]):
+                db.query(["INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
+                await ctx.send(":ok_hand:")
 
     @commands.command(name="rankfeed_remove", brief="Remove a rankfeed from the current channel", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def remove(self, ctx):
-        if permissions.check(ctx.message.author.id):
-            db.query(["DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
-            await ctx.send(":ok_hand:")
-        else:
-            await ctx.send(embed=permissions.error())
+        db.query(["DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
+        await ctx.send(":ok_hand:")
 
     async def fetch_rss(self):
         try:

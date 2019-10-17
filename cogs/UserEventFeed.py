@@ -13,56 +13,50 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
         self.bot.loop.create_task(self.usereventfeed_background_loop())
 
     @commands.command(name="uef_track", brief="Track mapping activity of a specified user", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def track(self, ctx, user_id):
-        if permissions.check(ctx.message.author.id):
-            channel = ctx.channel
-            user = await osu.get_user(u=user_id)
-            if user:
-                if not db.query(["SELECT * FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]]):
-                    db.query(["INSERT INTO usereventfeed_tracklist VALUES (?)", [str(user.id)]])
+        channel = ctx.channel
+        user = await osu.get_user(u=user_id)
+        if user:
+            if not db.query(["SELECT * FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]]):
+                db.query(["INSERT INTO usereventfeed_tracklist VALUES (?)", [str(user.id)]])
 
-                for event in user.events:
-                    if not db.query(["SELECT * FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
-                        db.query(["INSERT INTO usereventfeed_history VALUES (?, ?)", [str(user.id), str(event.id)]])
+            for event in user.events:
+                if not db.query(["SELECT * FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
+                    db.query(["INSERT INTO usereventfeed_history VALUES (?, ?)", [str(user.id), str(event.id)]])
 
-                if not db.query(["SELECT * FROM usereventfeed_channels WHERE channel_id = ? AND osu_id = ?", [str(channel.id), str(user.id)]]):
-                    db.query(["INSERT INTO usereventfeed_channels VALUES (?, ?)", [str(user.id), str(channel.id)]])
-                    await channel.send(content='Tracked `%s` in this channel' % (user.name))
-                else:
-                    await channel.send(content='User `%s` is already tracked in this channel' % (user.name))
-        else:
-            await ctx.send(embed=permissions.error())
+            if not db.query(["SELECT * FROM usereventfeed_channels WHERE channel_id = ? AND osu_id = ?", [str(channel.id), str(user.id)]]):
+                db.query(["INSERT INTO usereventfeed_channels VALUES (?, ?)", [str(user.id), str(channel.id)]])
+                await channel.send(content='Tracked `%s` in this channel' % (user.name))
+            else:
+                await channel.send(content='User `%s` is already tracked in this channel' % (user.name))
 
     @commands.command(name="uef_untrack", brief="Stop tracking the mapping activity of the specified user", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def untrack(self, ctx, user_id):
-        if permissions.check(ctx.message.author.id):
-            channel = ctx.channel
-            user = await osu.get_user(u=user_id)
-            if user:
-                user_id = user.id
-                user_name = user.name
-            else:
-                user_name = user_id
-            db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ? AND channel_id = ? ", [str(user_id), str(channel.id)]])
-            await channel.send(content='`%s` is no longer tracked in this channel' % (user_name))
+        channel = ctx.channel
+        user = await osu.get_user(u=user_id)
+        if user:
+            user_id = user.id
+            user_name = user.name
         else:
-            await ctx.send(embed=permissions.error())
+            user_name = user_id
+        db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ? AND channel_id = ? ", [str(user_id), str(channel.id)]])
+        await channel.send(content='`%s` is no longer tracked in this channel' % (user_name))
 
     @commands.command(name="uef_tracklist", brief="Show a list of all users' mapping activity being tracked and where", description="", pass_context=True)
+    @commands.check(permissions.is_admin)
     async def tracklist(self, ctx, everywhere = None):
-        if permissions.check(ctx.message.author.id):
-            channel = ctx.channel
-            tracklist = db.query("SELECT * FROM usereventfeed_tracklist")
-            if tracklist:
-                for one_entry in tracklist:
-                    destination_list = db.query(["SELECT channel_id FROM usereventfeed_channels WHERE osu_id = ?", [str(one_entry[0])]])
-                    destination_list_str = ""
-                    for destination_id in destination_list:
-                        destination_list_str += ("<#%s> " % (str(destination_id[0])))
-                    if (str(channel.id) in destination_list_str) or (everywhere):
-                        await channel.send(content='osu_id: `%s` | channels: %s' % (one_entry[0], destination_list_str))
-        else:
-            await ctx.send(embed=permissions.error())
+        channel = ctx.channel
+        tracklist = db.query("SELECT * FROM usereventfeed_tracklist")
+        if tracklist:
+            for one_entry in tracklist:
+                destination_list = db.query(["SELECT channel_id FROM usereventfeed_channels WHERE osu_id = ?", [str(one_entry[0])]])
+                destination_list_str = ""
+                for destination_id in destination_list:
+                    destination_list_str += ("<#%s> " % (str(destination_id[0])))
+                if (str(channel.id) in destination_list_str) or (everywhere):
+                    await channel.send(content='osu_id: `%s` | channels: %s' % (one_entry[0], destination_list_str))
 
     async def usereventfeed_background_loop(self):
         print("UEF Loop launched!")
