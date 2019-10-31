@@ -12,7 +12,7 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
         self.bot = bot
         self.bot.loop.create_task(self.usereventfeed_background_loop())
 
-    @commands.command(name="uef_track", brief="Track mapping activity of a specified user", description="", pass_context=True)
+    @commands.command(name="uef_track", brief="Track mapping activity of a specified user", description="")
     @commands.check(permissions.is_admin)
     async def track(self, ctx, user_id):
         channel = ctx.channel
@@ -31,7 +31,7 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
             else:
                 await channel.send(content='User `%s` is already tracked in this channel' % (user.name))
 
-    @commands.command(name="uef_untrack", brief="Stop tracking the mapping activity of the specified user", description="", pass_context=True)
+    @commands.command(name="uef_untrack", brief="Stop tracking the mapping activity of the specified user", description="")
     @commands.check(permissions.is_admin)
     async def untrack(self, ctx, user_id):
         channel = ctx.channel
@@ -44,7 +44,7 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
         db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ? AND channel_id = ? ", [str(user_id), str(channel.id)]])
         await channel.send(content='`%s` is no longer tracked in this channel' % (user_name))
 
-    @commands.command(name="uef_tracklist", brief="Show a list of all users' mapping activity being tracked and where", description="", pass_context=True)
+    @commands.command(name="uef_tracklist", brief="Show a list of all users' mapping activity being tracked and where", description="")
     @commands.check(permissions.is_admin)
     async def tracklist(self, ctx, everywhere = None):
         channel = ctx.channel

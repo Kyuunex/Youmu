@@ -17,7 +17,7 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
         self.bot = bot
         self.bot.loop.create_task(self.rssfeed_background_loop())
 
-    @commands.command(name="rss_add", brief="Subscribe to an RSS feed in the current channel", description="", pass_context=True)
+    @commands.command(name="rss_add", brief="Subscribe to an RSS feed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def add(self, ctx, *, url):
         channel = ctx.channel
@@ -37,14 +37,14 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
             else:
                 await channel.send(content='Feed `%s` is already tracked in this channel' % (url))
 
-    @commands.command(name="rss_remove", brief="Unsubscribe to an RSS feed in the current channel", description="", pass_context=True)
+    @commands.command(name="rss_remove", brief="Unsubscribe to an RSS feed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx, *, url):
         channel = ctx.channel
         db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
         await channel.send(content='Feed `%s` is no longer tracked in this channel' % (url))
 
-    @commands.command(name="rss_list", brief="Show a list of all RSS feeds being tracked", description="", pass_context=True)
+    @commands.command(name="rss_list", brief="Show a list of all RSS feeds being tracked", description="")
     @commands.check(permissions.is_admin)
     async def tracklist(self, ctx, everywhere = None):
         channel = ctx.channel

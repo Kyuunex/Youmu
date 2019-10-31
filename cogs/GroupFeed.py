@@ -14,13 +14,13 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
         self.bot = bot
         self.bot.loop.create_task(self.groupfeed_background_loop())
 
-    @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel", description="", pass_context=True)
+    @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def add(self, ctx):
         db.query(["INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
         await ctx.send(":ok_hand:")
 
-    @commands.command(name="groupfeed_remove", brief="Remove a groupfeed from the current channel", description="", pass_context=True)
+    @commands.command(name="groupfeed_remove", brief="Remove a groupfeed from the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx):
         db.query(["DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])

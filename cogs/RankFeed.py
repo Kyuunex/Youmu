@@ -16,7 +16,7 @@ class RankFeed(commands.Cog, name="RankFeed"):
         self.bot = bot
         self.bot.loop.create_task(self.rankfeed_background_loop())
 
-    @commands.command(name="rankfeed_add", brief="Add a rankfeed in the current channel", description="", pass_context=True)
+    @commands.command(name="rankfeed_add", brief="Add a rankfeed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def add(self, ctx):
         fresh_entries = await self.fetch_rss()
@@ -30,7 +30,7 @@ class RankFeed(commands.Cog, name="RankFeed"):
                 db.query(["INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
                 await ctx.send(":ok_hand:")
 
-    @commands.command(name="rankfeed_remove", brief="Remove a rankfeed from the current channel", description="", pass_context=True)
+    @commands.command(name="rankfeed_remove", brief="Remove a rankfeed from the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx):
         db.query(["DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
