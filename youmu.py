@@ -10,9 +10,9 @@ from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
 command_prefix = '.'
-appversion = "a20191031"
-client = commands.Bot(command_prefix=command_prefix, 
-                      description='Youmu %s' % (appversion))
+app_version = "a20191103"
+client = commands.Bot(command_prefix=command_prefix,
+                      description='Youmu %s' % app_version)
 
 if not os.path.exists(database_file):
     db.query("CREATE TABLE config (setting, parent, value, flag)")
@@ -35,8 +35,7 @@ if not os.path.exists(database_file):
 
 initial_extensions = [
     'cogs.BotManagement', 
-    'cogs.GroupFeed', 
-    'cogs.RankFeed', 
+    'cogs.GroupFeed',
     'cogs.RSSFeed', 
     'cogs.UserEventFeed', 
 ]
@@ -56,8 +55,8 @@ async def on_ready():
     print(client.user.id)
     print('------')
     if not db.query("SELECT * FROM admins"):
-        appinfo = await client.application_info()
-        db.query(["INSERT INTO admins VALUES (?, ?)", [str(appinfo.owner.id), "1"]])
-        print("Added %s to admin list" % (appinfo.owner.name))
+        app_info = await client.application_info()
+        db.query(["INSERT INTO admins VALUES (?, ?)", [str(app_info.owner.id), "1"]])
+        print("Added %s to admin list" % app_info.owner.name)
 
 client.run(bot_token)
