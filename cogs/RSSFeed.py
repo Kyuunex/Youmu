@@ -12,6 +12,7 @@ from html import unescape
 from modules import db
 from modules import permissions
 
+
 class RSSFeed(commands.Cog, name="RSSFeed"):
     def __init__(self, bot):
         self.bot = bot
@@ -28,34 +29,40 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
 
             for one_entry in online_entries:
                 entry_id = one_entry['id']
-                if not db.query(["SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?", [str(url), str(entry_id)]]):
+                if not db.query(["SELECT * FROM rssfeed_history "
+                                 "WHERE url = ? AND entry_id = ?",
+                                 [str(url), str(entry_id)]]):
                     db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
 
-            if not db.query(["SELECT * FROM rssfeed_channels WHERE channel_id = ? AND url = ?", [str(channel.id), str(url)]]):
+            if not db.query(["SELECT * FROM rssfeed_channels "
+                             "WHERE channel_id = ? AND url = ?",
+                             [str(channel.id), str(url)]]):
                 db.query(["INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)]])
-                await channel.send(content='Feed `%s` is now tracked in this channel' % (url))
+                await channel.send(content='Feed `%s` is now tracked in this channel' % url)
             else:
-                await channel.send(content='Feed `%s` is already tracked in this channel' % (url))
+                await channel.send(content='Feed `%s` is already tracked in this channel' % url)
 
     @commands.command(name="rss_remove", brief="Unsubscribe to an RSS feed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx, *, url):
         channel = ctx.channel
         db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
-        await channel.send(content='Feed `%s` is no longer tracked in this channel' % (url))
+        await channel.send(content='Feed `%s` is no longer tracked in this channel' % url)
 
     @commands.command(name="rss_list", brief="Show a list of all RSS feeds being tracked", description="")
     @commands.check(permissions.is_admin)
-    async def tracklist(self, ctx, everywhere = None):
+    async def tracklist(self, ctx, everywhere=None):
         channel = ctx.channel
         tracklist = db.query("SELECT * FROM rssfeed_tracklist")
         if tracklist:
             for one_entry in tracklist:
-                destination_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(one_entry[0])]])
+                destination_list = db.query(["SELECT channel_id FROM rssfeed_channels "
+                                             "WHERE url = ?",
+                                             [str(one_entry[0])]])
                 destination_list_str = ""
                 for destination_id in destination_list:
                     destination_list_str += ("<#%s> " % (str(destination_id[0])))
-                if (str(channel.id) in destination_list_str) or (everywhere):
+                if (str(channel.id) in destination_list_str) or everywhere:
                     await channel.send(content='url: `%s` | channels: %s' % (one_entry[0], destination_list_str))
 
     async def rss_entry_embed(self, rss_object, color=0xbd3661):
@@ -81,9 +88,9 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(url) as response:
-                    httpcontents = (await response.text())
-                    if len(httpcontents) > 4:
-                        return httpcontents
+                    http_contents = (await response.text())
+                    if len(http_contents) > 4:
+                        return http_contents
                     else:
                         return None
         except Exception as e:
@@ -103,11 +110,13 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
                     url = rssfeed_entry[0]
                     channel_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(url)]])
                     if channel_list:
-                        print("checking %s" % (url))
+                        print("checking %s" % url)
                         online_entries = (feedparser.parse(await self.fetch(url)))['entries']
                         for one_entry in online_entries:
                             entry_id = one_entry['id']
-                            if not db.query(["SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?", [str(url), str(entry_id)]]):
+                            if not db.query(["SELECT * FROM rssfeed_history "
+                                             "WHERE url = ? AND entry_id = ?",
+                                             [str(url), str(entry_id)]]):
                                 for one_channel in channel_list:
                                     channel = self.bot.get_channel(int(one_channel[0]))
                                     await channel.send(embed=await self.rss_entry_embed(one_entry))
@@ -118,6 +127,7 @@ class RSSFeed(commands.Cog, name="RSSFeed"):
                 print(time.strftime('%X %x %Z'))
                 print("finished rss check")
             await asyncio.sleep(1200)
+
 
 def setup(bot):
     bot.add_cog(RSSFeed(bot))

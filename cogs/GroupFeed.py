@@ -26,29 +26,32 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
         db.query(["DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
         await ctx.send(":ok_hand:")
 
-    async def comparelists(self, list1, list2, reverse = False):
+    async def compare_lists(self, list1, list2, reverse = False):
         difference = []
         if reverse:
-            comparelist1 = list2
-            comparelist2 = list1
+            compare_list_1 = list2
+            compare_list_2 = list1
         else:
-            comparelist1 = list1
-            comparelist2 = list2
-        for i in comparelist1:
-            if not i in comparelist2:
+            compare_list_1 = list1
+            compare_list_2 = list2
+        for i in compare_list_1:
+            if not i in compare_list_2:
                 difference.append(i)
         return difference
 
-    async def compare(self, result, lookupvalue, tablename, lookupkey, updatedb = True, reverse = False):
-        if not db.query(["SELECT %s FROM %s WHERE %s = ?" % (lookupkey, tablename, lookupkey), [lookupvalue]]):
-            db.query(["INSERT INTO %s VALUES (?,?)" % (tablename), [lookupvalue, json.dumps(result)]])
+    async def compare(self, result, lookup_value, table_name, lookup_key, update_db=True, reverse=False):
+        if not db.query(["SELECT %s FROM %s WHERE %s = ?" % (lookup_key, table_name, lookup_key), [lookup_value]]):
+            db.query(["INSERT INTO %s VALUES (?,?)" % table_name, [lookup_value, json.dumps(result)]])
             return None
         else:
             if result:
-                localdata = json.loads((db.query(["SELECT contents FROM %s WHERE %s = ?" % (tablename, lookupkey), [lookupvalue]]))[0][0])
-                comparison = await self.comparelists(result, localdata, reverse)
-                if updatedb:
-                    db.query(["UPDATE %s SET contents = ? WHERE %s = ?" % (tablename, lookupkey), [json.dumps(result), lookupvalue]])
+                local_data = json.loads((db.query(["SELECT contents FROM %s "
+                                                   "WHERE %s = ?" % (table_name, lookup_key),
+                                                   [lookup_value]]))[0][0])
+                comparison = await self.compare_lists(result, local_data, reverse)
+                if update_db:
+                    db.query(["UPDATE %s SET contents = ? WHERE %s = ?" %
+                              (table_name, lookup_key), [json.dumps(result), lookup_value]])
                 if comparison:
                     return comparison
                 else:
@@ -59,11 +62,11 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
 
     async def get_changes(self, group_members, group_id):
         changes = []
-        userlist = []
+        user_list = []
         for i in group_members:
-            userlist.append(str(i["id"]))
-        check_additions = await self.compare(userlist, group_id, 'groupfeed_json_data', 'group_id', False, False)
-        check_removals = await self.compare(userlist, group_id, 'groupfeed_json_data', 'group_id', True, True)
+            user_list.append(str(i["id"]))
+        check_additions = await self.compare(user_list, group_id, 'groupfeed_json_data', 'group_id', False, False)
+        check_removals = await self.compare(user_list, group_id, 'groupfeed_json_data', 'group_id', True, True)
         if check_additions:
             for new_user in check_additions:
                 changes.append(["added", new_user, "Someone"])
@@ -84,19 +87,19 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
 
         user = await osu.get_user(u=event[1])
         if user:
-            flagsign = ":flag_%s:" % (user.country.lower())
+            flag_sign = ":flag_%s:" % (user.country.lower())
             username = user.name
         else:
-            flagsign = ":gay_pride_flag:"
+            flag_sign = ":gay_pride_flag:"
             username = event[2]
-            #description_template += "\n **%s got restricted btw lol**" % (username)
+            # description_template += "\n **%s got restricted btw lol**" % username
             description_template = "%s **%s**\n**has gotten restricted lol**\nand has been removed from\nthe **%s**"
             color = 0x9e0000
 
-        what_group = "[%s](%s)" % (group_name, ("https://osu.ppy.sh/groups/%s" % (group_id)))
+        what_group = "[%s](%s)" % (group_name, ("https://osu.ppy.sh/groups/%s" % group_id))
         what_user = "[%s](https://osu.ppy.sh/users/%s)" % (username, event[1])
 
-        description = description_template % (flagsign, what_user, what_group)
+        description = description_template % (flag_sign, what_user, what_group)
 
         embed = await self.group_member(event[1], description, color)
         for groupfeed_channel_id in groupfeed_channel_list:
@@ -151,9 +154,10 @@ class GroupFeed(commands.Cog, name="GroupFeed"):
             color=color
         )
         embed.set_thumbnail(
-            url='https://a.ppy.sh/%s' % (user_id)
+            url='https://a.ppy.sh/%s' % user_id
         )
         return embed
+
 
 def setup(bot):
     bot.add_cog(GroupFeed(bot))

@@ -40,9 +40,9 @@ class RankFeed(commands.Cog, name="RankFeed"):
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get("https://osu.ppy.sh/feed/ranked/") as response:
-                    httpcontents = (await response.text())
-                    if len(httpcontents) > 4:
-                        return httpcontents
+                    rss_contents = (await response.text())
+                    if len(rss_contents) > 4:
+                        return rss_contents
                     else:
                         return None
         except Exception as e:
@@ -71,7 +71,9 @@ class RankFeed(commands.Cog, name="RankFeed"):
                         map_feed = feedparser.parse(fresh_entries)
                         mapset_list = self.build_mapset_list(map_feed)
                         for mapset_id in mapset_list:
-                            if not db.query(["SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?", [str(mapset_id)]]):
+                            if not db.query(["SELECT mapset_id FROM rankfeed_history "
+                                             "WHERE mapset_id = ?",
+                                             [str(mapset_id)]]):
                                 embed = await osuembed.beatmapset(await osu.get_beatmapset(s=mapset_id))
                                 if embed:
                                     for rankfeed_channel_id in rankfeed_channel_list:
@@ -79,8 +81,12 @@ class RankFeed(commands.Cog, name="RankFeed"):
                                         if channel:
                                             await channel.send(embed=embed)
                                         else:
-                                            db.query(["DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(rankfeed_channel_id[0])]])
-                                            print("channel with id %s no longer exists so I am removing it from the list" % (str(rankfeed_channel_id[0])))
+                                            db.query(["DELETE FROM rankfeed_channel_list "
+                                                      "WHERE channel_id = ?",
+                                                      [str(rankfeed_channel_id[0])]])
+                                            print("channel with id %s no longer exists "
+                                                  "so I am removing it from the list" %
+                                                  (str(rankfeed_channel_id[0])))
                                     db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
                     print(time.strftime('%X %x %Z')+' | finished rankfeed check')
                 await asyncio.sleep(1600)
@@ -89,6 +95,7 @@ class RankFeed(commands.Cog, name="RankFeed"):
                 print("in rankfeed_background_loop")
                 print(e)
                 await asyncio.sleep(3600)
+
 
 def setup(bot):
     bot.add_cog(RankFeed(bot))
