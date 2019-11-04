@@ -24,7 +24,8 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
 
             for event in user.events:
                 if not db.query(["SELECT * FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
-                    db.query(["INSERT INTO usereventfeed_history VALUES (?, ?)", [str(user.id), str(event.id)]])
+                    db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?, ?)",
+                              [str(user.id), str(event.id), "", str(int(time.time()))]])
 
             if not db.query(["SELECT * FROM usereventfeed_channels "
                              "WHERE channel_id = ? AND osu_id = ?",
@@ -97,7 +98,7 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
                 final_channel_list = []
                 for channel in channel_list:
                     final_channel_list.append(int(channel[0]))
-                await self.check_events(final_channel_list, user, "usereventfeed_history")
+                await self.check_events(final_channel_list, user)
             else:
                 db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
                 print("%s is not tracked in any channel so I am untracking them" % (str(user.id)))
@@ -106,11 +107,12 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
             db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
             db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)]])
 
-    async def check_events(self, channel_list, user, history_table_name):
+    async def check_events(self, channel_list, user):
         print(time.strftime('%X %x %Z') + " | currently checking %s" % user.name)
         for event in user.events:
-            if not db.query(["SELECT event_id FROM %s WHERE event_id = ?" % history_table_name, [str(event.id)]]):
-                db.query(["INSERT INTO %s VALUES (?, ?)" % history_table_name, [str(user.id), str(event.id)]])
+            if not db.query(["SELECT event_id FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
+                db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?, ?)",
+                          [str(user.id), str(event.id), "", str(int(time.time()))]])
                 event_color = await self.get_event_color(event.display_text)
                 if event_color:
                     result = await osu.get_beatmapset(s=event.beatmapset_id)

@@ -27,7 +27,7 @@ if not os.path.exists(database_file):
 
     db.query("CREATE TABLE usereventfeed_tracklist (osu_id)")
     db.query("CREATE TABLE usereventfeed_channels (osu_id, channel_id)")
-    db.query("CREATE TABLE usereventfeed_history (osu_id, event_id)")
+    db.query("CREATE TABLE usereventfeed_history (osu_id, event_id, channel_id, timestamp)")
 
     db.query("CREATE TABLE groupfeed_channel_list (channel_id)")
     db.query("CREATE TABLE groupfeed_members (osu_id, username, group_id)")
