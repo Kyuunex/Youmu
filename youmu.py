@@ -10,7 +10,7 @@ from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
 command_prefix = '.'
-app_version = "a20191103"
+app_version = "a20191104"
 client = commands.Bot(command_prefix=command_prefix,
                       description='Youmu %s' % app_version)
 
@@ -27,7 +27,7 @@ if not os.path.exists(database_file):
 
     db.query("CREATE TABLE usereventfeed_tracklist (osu_id)")
     db.query("CREATE TABLE usereventfeed_channels (osu_id, channel_id)")
-    db.query("CREATE TABLE usereventfeed_history (osu_id, event_id, channel_id, timestamp)")
+    db.query("CREATE TABLE usereventfeed_history (osu_id, event_id, timestamp)")
 
     db.query("CREATE TABLE groupfeed_channel_list (channel_id)")
     db.query("CREATE TABLE groupfeed_members (osu_id, username, group_id)")

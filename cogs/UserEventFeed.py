@@ -24,8 +24,8 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
 
             for event in user.events:
                 if not db.query(["SELECT * FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
-                    db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?, ?)",
-                              [str(user.id), str(event.id), "", str(int(time.time()))]])
+                    db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
+                              [str(user.id), str(event.id), str(int(time.time()))]])
 
             if not db.query(["SELECT * FROM usereventfeed_channels "
                              "WHERE channel_id = ? AND osu_id = ?",
@@ -111,8 +111,8 @@ class UserEventFeed(commands.Cog, name="UserEventFeed"):
         print(time.strftime('%X %x %Z') + " | currently checking %s" % user.name)
         for event in user.events:
             if not db.query(["SELECT event_id FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
-                db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?, ?)",
-                          [str(user.id), str(event.id), "", str(int(time.time()))]])
+                db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
+                          [str(user.id), str(event.id), str(int(time.time()))]])
                 event_color = await self.get_event_color(event.display_text)
                 if event_color:
                     result = await osu.get_beatmapset(s=event.beatmapset_id)
