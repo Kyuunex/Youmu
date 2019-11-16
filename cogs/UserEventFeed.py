@@ -8,7 +8,7 @@ from modules.connections import osu as osu
 import osuembed
 
 
-class UserEventFeed(commands.Cog, name="UserEventFeed"):
+class UserEventFeed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.usereventfeed_background_loop())

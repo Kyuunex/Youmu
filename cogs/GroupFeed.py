@@ -9,7 +9,7 @@ from modules.connections import osu as osu
 from modules.connections import osuweb as osuweb
 
 
-class GroupFeed(commands.Cog, name="GroupFeed"):
+class GroupFeed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.groupfeed_background_loop())

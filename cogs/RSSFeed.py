@@ -13,7 +13,7 @@ from modules import db
 from modules import permissions
 
 
-class RSSFeed(commands.Cog, name="RSSFeed"):
+class RSSFeed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.bot.loop.create_task(self.rssfeed_background_loop())

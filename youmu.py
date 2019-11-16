@@ -10,7 +10,7 @@ from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
 command_prefix = '.'
-app_version = "a20191104.1"
+app_version = "a20191104.2"
 client = commands.Bot(command_prefix=command_prefix,
                       description='Youmu %s' % app_version)
 
@@ -34,10 +34,10 @@ if not os.path.exists(database_file):
     db.query("CREATE TABLE groupfeed_json_data (group_id, contents)")
 
 initial_extensions = [
-    'cogs.BotManagement', 
+    'cogs.BotManagement',
     'cogs.GroupFeed',
-    'cogs.RSSFeed', 
-    'cogs.UserEventFeed', 
+    'cogs.RSSFeed',
+    'cogs.UserEventFeed',
 ]
 
 if __name__ == '__main__':
@@ -58,5 +58,6 @@ async def on_ready():
         app_info = await client.application_info()
         db.query(["INSERT INTO admins VALUES (?, ?)", [str(app_info.owner.id), "1"]])
         print("Added %s to admin list" % app_info.owner.name)
+
 
 client.run(bot_token)
