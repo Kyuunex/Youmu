@@ -2,7 +2,6 @@ import feedparser
 import aiohttp
 import time
 import asyncio
-import discord
 from discord.ext import commands
 
 from modules import db
