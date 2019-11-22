@@ -57,7 +57,7 @@ class GroupFeed(commands.Cog):
                 else:
                     return None
             else:
-                print('in compare groupfeed connection problems?')
+                print("in compare groupfeed connection problems?")
                 return None
 
     async def get_changes(self, group_members, group_id):
@@ -65,8 +65,8 @@ class GroupFeed(commands.Cog):
         user_list = []
         for i in group_members:
             user_list.append(str(i["id"]))
-        check_additions = await self.compare(user_list, group_id, 'groupfeed_json_data', 'group_id', False, False)
-        check_removals = await self.compare(user_list, group_id, 'groupfeed_json_data', 'group_id', True, True)
+        check_additions = await self.compare(user_list, group_id, "groupfeed_json_data", "group_id", False, False)
+        check_removals = await self.compare(user_list, group_id, "groupfeed_json_data", "group_id", True, True)
         if check_additions:
             for new_user in check_additions:
                 changes.append(["added", new_user, "Someone"])
@@ -115,7 +115,7 @@ class GroupFeed(commands.Cog):
                 for event in events:
                     await self.execute_event(groupfeed_channel_list, event, group_id, group_name)
         else:
-            print('groupfeed connection problems?')
+            print("groupfeed connection problems?")
             return None
 
     async def groupfeed_background_loop(self):
@@ -126,7 +126,7 @@ class GroupFeed(commands.Cog):
                 await asyncio.sleep(5)
                 groupfeed_channel_list = db.query("SELECT channel_id FROM groupfeed_channel_list")
                 if groupfeed_channel_list:
-                    print(time.strftime('%X %x %Z')+' | performing groupfeed check')
+                    print(time.strftime("%X %x %Z")+" | performing groupfeed check")
                     await self.check_group(groupfeed_channel_list, "7", "Nomination Assessment Team")
                     await asyncio.sleep(120)
                     await self.check_group(groupfeed_channel_list, "28", "Beatmap Nominators")
@@ -140,10 +140,10 @@ class GroupFeed(commands.Cog):
                     await self.check_group(groupfeed_channel_list, "16", "osu! Alumni")
                     await asyncio.sleep(120)
                     await self.check_group(groupfeed_channel_list, "22", "Support Team")
-                    print(time.strftime('%X %x %Z')+' | finished groupfeed check')
+                    print(time.strftime("%X %x %Z")+" | finished groupfeed check")
                 await asyncio.sleep(1600)
             except Exception as e:
-                print(time.strftime('%X %x %Z'))
+                print(time.strftime("%X %x %Z"))
                 print("in groupfeed_background_loop")
                 print(e)
                 await asyncio.sleep(3600)
@@ -154,7 +154,7 @@ class GroupFeed(commands.Cog):
             color=color
         )
         embed.set_thumbnail(
-            url='https://a.ppy.sh/%s' % user_id
+            url="https://a.ppy.sh/%s" % user_id
         )
         return embed
 

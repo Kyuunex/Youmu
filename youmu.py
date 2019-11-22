@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import discord
 from discord.ext import commands
 import os
 
@@ -9,10 +8,10 @@ from modules import db
 from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
-command_prefix = '.'
-app_version = "a20191104.2"
+command_prefix = "."
+app_version = "a20191104.3"
 client = commands.Bot(command_prefix=command_prefix,
-                      description='Youmu %s' % app_version)
+                      description="Youmu %s" % app_version)
 
 if not os.path.exists(database_file):
     db.query("CREATE TABLE config (setting, parent, value, flag)")
@@ -34,13 +33,13 @@ if not os.path.exists(database_file):
     db.query("CREATE TABLE groupfeed_json_data (group_id, contents)")
 
 initial_extensions = [
-    'cogs.BotManagement',
-    'cogs.GroupFeed',
-    'cogs.RSSFeed',
-    'cogs.UserEventFeed',
+    "cogs.BotManagement",
+    "cogs.GroupFeed",
+    "cogs.RSSFeed",
+    "cogs.UserEventFeed",
 ]
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     for extension in initial_extensions:
         try:
             client.load_extension(extension)
@@ -50,10 +49,10 @@ if __name__ == '__main__':
 
 @client.event
 async def on_ready():
-    print('Logged in as')
+    print("Logged in as")
     print(client.user.name)
     print(client.user.id)
-    print('------')
+    print("------")
     if not db.query("SELECT * FROM admins"):
         app_info = await client.application_info()
         db.query(["INSERT INTO admins VALUES (?, ?)", [str(app_info.owner.id), "1"]])

@@ -1,6 +1,5 @@
 import asyncio
 import time
-import discord
 from discord.ext import commands
 from modules import db
 from modules import permissions
@@ -31,9 +30,9 @@ class UserEventFeed(commands.Cog):
                              "WHERE channel_id = ? AND osu_id = ?",
                              [str(channel.id), str(user.id)]]):
                 db.query(["INSERT INTO usereventfeed_channels VALUES (?, ?)", [str(user.id), str(channel.id)]])
-                await channel.send(content='Tracked `%s` in this channel' % user.name)
+                await channel.send(content="Tracked `%s` in this channel" % user.name)
             else:
-                await channel.send(content='User `%s` is already tracked in this channel' % user.name)
+                await channel.send(content="User `%s` is already tracked in this channel" % user.name)
 
     @commands.command(name="uef_untrack", brief="Stop tracking the mapping activity of the specified user",
                       description="")
@@ -49,7 +48,7 @@ class UserEventFeed(commands.Cog):
         db.query(["DELETE FROM usereventfeed_channels "
                   "WHERE osu_id = ? AND channel_id = ? ",
                   [str(user_id), str(channel.id)]])
-        await channel.send(content='`%s` is no longer tracked in this channel' % user_name)
+        await channel.send(content="`%s` is no longer tracked in this channel" % user_name)
 
     @commands.command(name="uef_tracklist",
                       brief="Show a list of all users' mapping activity being tracked and where",
@@ -67,7 +66,7 @@ class UserEventFeed(commands.Cog):
                 for destination_id in destination_list:
                     destination_list_str += ("<#%s> " % (str(destination_id[0])))
                 if (str(channel.id) in destination_list_str) or everywhere:
-                    await channel.send(content='osu_id: `%s` | channels: %s' % (one_entry[0], destination_list_str))
+                    await channel.send(content="osu_id: `%s` | channels: %s" % (one_entry[0], destination_list_str))
 
     async def usereventfeed_background_loop(self):
         print("UEF Loop launched!")
@@ -77,13 +76,13 @@ class UserEventFeed(commands.Cog):
                 await asyncio.sleep(10)
                 tracklist = db.query("SELECT osu_id FROM usereventfeed_tracklist")
                 if tracklist:
-                    print(time.strftime('%X %x %Z') + ' | performing user event check')
+                    print(time.strftime("%X %x %Z") + " | performing user event check")
                     for user_id in tracklist:
                         await self.prepare_to_check(user_id[0])
-                    print(time.strftime('%X %x %Z') + ' | finished user event check')
+                    print(time.strftime("%X %x %Z") + " | finished user event check")
                 await asyncio.sleep(1200)
             except Exception as e:
-                print(time.strftime('%X %x %Z'))
+                print(time.strftime("%X %x %Z"))
                 print("in usereventfeed_background_loop")
                 print(e)
                 await asyncio.sleep(7200)
@@ -108,7 +107,7 @@ class UserEventFeed(commands.Cog):
             db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)]])
 
     async def check_events(self, channel_list, user):
-        print(time.strftime('%X %x %Z') + " | currently checking %s" % user.name)
+        print(time.strftime("%X %x %Z") + " | currently checking %s" % user.name)
         for event in user.events:
             if not db.query(["SELECT event_id FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
                 db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
@@ -125,16 +124,16 @@ class UserEventFeed(commands.Cog):
                             await channel.send(display_text, embed=embed)
 
     async def get_event_color(self, string):
-        if 'has submitted' in string:
+        if "has submitted" in string:
             return 0x2a52b2
-        elif 'has updated' in string:
+        elif "has updated" in string:
             # return 0xb2532a
             return None
-        elif 'qualified' in string:
+        elif "qualified" in string:
             return 0x2ecc71
-        elif 'has been revived' in string:
+        elif "has been revived" in string:
             return 0xff93c9
-        elif 'has been deleted' in string:
+        elif "has been deleted" in string:
             return 0xf2d7d5
         else:
             return None

@@ -46,15 +46,15 @@ class RankFeed(commands.Cog):
                     else:
                         return None
         except Exception as e:
-            print(time.strftime('%X %x %Z'))
+            print(time.strftime("%X %x %Z"))
             print("in rankfeed.fetch")
             print(e)
             return None
 
     def build_mapset_list(self, map_feed):
         mapset_list = []
-        for one_mapset in map_feed['entries']:
-            mapset_list.append(one_mapset['link'].split('http://osu.ppy.sh/s/')[1])
+        for one_mapset in map_feed["entries"]:
+            mapset_list.append(one_mapset["link"].split("http://osu.ppy.sh/s/")[1])
         return mapset_list
 
     async def rankfeed_background_loop(self):
@@ -65,7 +65,7 @@ class RankFeed(commands.Cog):
                 await asyncio.sleep(10)
                 rankfeed_channel_list = db.query("SELECT channel_id FROM rankfeed_channel_list")
                 if rankfeed_channel_list:
-                    print(time.strftime('%X %x %Z')+' | performing rankfeed check')
+                    print(time.strftime("%X %x %Z")+" | performing rankfeed check")
                     fresh_entries = await self.fetch_rss()
                     if fresh_entries:
                         map_feed = feedparser.parse(fresh_entries)
@@ -88,10 +88,10 @@ class RankFeed(commands.Cog):
                                                   "so I am removing it from the list" %
                                                   (str(rankfeed_channel_id[0])))
                                     db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
-                    print(time.strftime('%X %x %Z')+' | finished rankfeed check')
+                    print(time.strftime("%X %x %Z")+" | finished rankfeed check")
                 await asyncio.sleep(1600)
             except Exception as e:
-                print(time.strftime('%X %x %Z'))
+                print(time.strftime("%X %x %Z"))
                 print("in rankfeed_background_loop")
                 print(e)
                 await asyncio.sleep(3600)

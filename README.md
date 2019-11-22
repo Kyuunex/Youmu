@@ -1,6 +1,6 @@
 # Youmu
 
-Youmu is a osu! related discord bot that tracks: group changes, new ranked maps, any user's mapping activity. Additionally there's RSS feed tracking functionality.
+Youmu is a osu! related discord bot that tracks: group changes, ~~new ranked maps~~, any user's mapping activity. Additionally there's RSS feed tracking functionality.
 
 This bot is built using discord.py and uses sqlite3 database.
 
