@@ -30,9 +30,9 @@ class UserEventFeed(commands.Cog):
                              "WHERE channel_id = ? AND osu_id = ?",
                              [str(channel.id), str(user.id)]]):
                 db.query(["INSERT INTO usereventfeed_channels VALUES (?, ?)", [str(user.id), str(channel.id)]])
-                await channel.send(content="Tracked `%s` in this channel" % user.name)
+                await channel.send(f"Tracked `{user.name}` in this channel")
             else:
-                await channel.send(content="User `%s` is already tracked in this channel" % user.name)
+                await channel.send(f"User `{user.name}` is already tracked in this channel")
 
     @commands.command(name="uef_untrack", brief="Stop tracking the mapping activity of the specified user",
                       description="")
@@ -48,7 +48,7 @@ class UserEventFeed(commands.Cog):
         db.query(["DELETE FROM usereventfeed_channels "
                   "WHERE osu_id = ? AND channel_id = ? ",
                   [str(user_id), str(channel.id)]])
-        await channel.send(content="`%s` is no longer tracked in this channel" % user_name)
+        await channel.send(f"`{user_name}` is no longer tracked in this channel")
 
     @commands.command(name="uef_tracklist",
                       brief="Show a list of all users' mapping activity being tracked and where",
@@ -64,9 +64,9 @@ class UserEventFeed(commands.Cog):
                                              [str(one_entry[0])]])
                 destination_list_str = ""
                 for destination_id in destination_list:
-                    destination_list_str += ("<#%s> " % (str(destination_id[0])))
+                    destination_list_str += f"<#{destination_id[0]}> "
                 if (str(channel.id) in destination_list_str) or everywhere:
-                    await channel.send(content="osu_id: `%s` | channels: %s" % (one_entry[0], destination_list_str))
+                    await channel.send(f"osu_id: `{one_entry[0]}` | channels: {destination_list_str}")
 
     async def usereventfeed_background_loop(self):
         print("UEF Loop launched!")
@@ -100,14 +100,14 @@ class UserEventFeed(commands.Cog):
                 await self.check_events(final_channel_list, user)
             else:
                 db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
-                print("%s is not tracked in any channel so I am untracking them" % (str(user.id)))
+                print(f"{user.id} is not tracked in any channel so I am untracking them")
         else:
-            print("%s is restricted, untracking everywhere" % (str(user_id)))
+            print(f"{user_id} is restricted, untracking everywhere")
             db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
             db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)]])
 
     async def check_events(self, channel_list, user):
-        print(time.strftime("%X %x %Z") + " | currently checking %s" % user.name)
+        print(time.strftime("%X %x %Z") + f" | currently checking {user.name}")
         for event in user.events:
             if not db.query(["SELECT event_id FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
                 db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?)",

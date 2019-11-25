@@ -1,5 +1,3 @@
-# TODO: fix this, this is broken, sometimes entry has no id
-
 import feedparser
 import aiohttp
 import time
@@ -28,7 +26,7 @@ class RSSFeed(commands.Cog):
                 db.query(["INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)]])
 
             for one_entry in online_entries:
-                entry_id = one_entry["id"]
+                entry_id = one_entry["link"]
                 if not db.query(["SELECT * FROM rssfeed_history "
                                  "WHERE url = ? AND entry_id = ?",
                                  [str(url), str(entry_id)]]):
@@ -38,16 +36,16 @@ class RSSFeed(commands.Cog):
                              "WHERE channel_id = ? AND url = ?",
                              [str(channel.id), str(url)]]):
                 db.query(["INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)]])
-                await channel.send(content="Feed `%s` is now tracked in this channel" % url)
+                await channel.send(f"Feed `{url}` is now tracked in this channel")
             else:
-                await channel.send(content="Feed `%s` is already tracked in this channel" % url)
+                await channel.send(f"Feed `{url}` is already tracked in this channel")
 
     @commands.command(name="rss_remove", brief="Unsubscribe to an RSS feed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx, *, url):
         channel = ctx.channel
         db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
-        await channel.send(content="Feed `%s` is no longer tracked in this channel" % url)
+        await channel.send(f"Feed `{url}` is no longer tracked in this channel")
 
     @commands.command(name="rss_list", brief="Show a list of all RSS feeds being tracked", description="")
     @commands.check(permissions.is_admin)
@@ -61,9 +59,9 @@ class RSSFeed(commands.Cog):
                                              [str(one_entry[0])]])
                 destination_list_str = ""
                 for destination_id in destination_list:
-                    destination_list_str += ("<#%s> " % (str(destination_id[0])))
+                    destination_list_str += f"<#{destination_id[0]}> "
                 if (str(channel.id) in destination_list_str) or everywhere:
-                    await channel.send(content="url: `%s` | channels: %s" % (one_entry[0], destination_list_str))
+                    await channel.send(f"url: `{one_entry[0]}` | channels: {destination_list_str}")
 
     async def rss_entry_embed(self, rss_object, color=0xbd3661):
         if rss_object:
@@ -110,10 +108,10 @@ class RSSFeed(commands.Cog):
                     url = rssfeed_entry[0]
                     channel_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(url)]])
                     if channel_list:
-                        print("checking %s" % url)
+                        print(f"checking {url}")
                         online_entries = (feedparser.parse(await self.fetch(url)))["entries"]
                         for one_entry in online_entries:
-                            entry_id = one_entry["id"]
+                            entry_id = one_entry["link"]
                             if not db.query(["SELECT * FROM rssfeed_history "
                                              "WHERE url = ? AND entry_id = ?",
                                              [str(url), str(entry_id)]]):
@@ -123,7 +121,7 @@ class RSSFeed(commands.Cog):
                                 db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
                     else:
                         db.query(["DELETE FROM rssfeed_tracklist WHERE url = ?", [str(url)]])
-                        print("%s is not tracked in any channel so I am untracking it" % (str(url)))
+                        print(f"{url} is not tracked in any channel so I am untracking it")
                 print(time.strftime("%X %x %Z"))
                 print("finished rss check")
             await asyncio.sleep(1200)

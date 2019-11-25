@@ -26,7 +26,7 @@ class GroupFeed(commands.Cog):
         db.query(["DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
         await ctx.send(":ok_hand:")
 
-    async def compare_lists(self, list1, list2, reverse = False):
+    async def compare_lists(self, list1, list2, reverse=False):
         difference = []
         if reverse:
             compare_list_1 = list2
@@ -40,18 +40,18 @@ class GroupFeed(commands.Cog):
         return difference
 
     async def compare(self, result, lookup_value, table_name, lookup_key, update_db=True, reverse=False):
-        if not db.query(["SELECT %s FROM %s WHERE %s = ?" % (lookup_key, table_name, lookup_key), [lookup_value]]):
-            db.query(["INSERT INTO %s VALUES (?,?)" % table_name, [lookup_value, json.dumps(result)]])
+        if not db.query([f"SELECT {lookup_key} FROM {table_name} WHERE {lookup_key} = ?", [lookup_value]]):
+            db.query([f"INSERT INTO {table_name} VALUES (?,?)", [lookup_value, json.dumps(result)]])
             return None
         else:
             if result:
-                local_data = json.loads((db.query(["SELECT contents FROM %s "
-                                                   "WHERE %s = ?" % (table_name, lookup_key),
+                local_data = json.loads((db.query([f"SELECT contents FROM {table_name} "
+                                                   f"WHERE {lookup_key} = ?",
                                                    [lookup_value]]))[0][0])
                 comparison = await self.compare_lists(result, local_data, reverse)
                 if update_db:
-                    db.query(["UPDATE %s SET contents = ? WHERE %s = ?" %
-                              (table_name, lookup_key), [json.dumps(result), lookup_value]])
+                    db.query([f"UPDATE {table_name} SET contents = ? WHERE {lookup_key} = ?",
+                              [json.dumps(result), lookup_value]])
                 if comparison:
                     return comparison
                 else:
@@ -77,17 +77,17 @@ class GroupFeed(commands.Cog):
 
     async def execute_event(self, groupfeed_channel_list, event, group_id, group_name):
         if event[0] == "removed":
-            print("groupfeed | %s | removed %s" % (group_name, event[2]))
+            print(f"groupfeed | {group_name} | removed {event[2]}")
             description_template = "%s **%s**\nhas been removed from\nthe **%s**"
             color = 0x2c0e6c
         elif event[0] == "added":
-            print("groupfeed | %s | added %s" % (group_name, event[2]))
+            print(f"groupfeed | {group_name} | added {event[2]}")
             description_template = "%s **%s**\nhas been added to\nthe **%s**"
             color = 0xffbd0e
 
         user = await osu.get_user(u=event[1])
         if user:
-            flag_sign = ":flag_%s:" % (user.country.lower())
+            flag_sign = f":flag_{user.country.lower()}:"
             username = user.name
         else:
             flag_sign = ":gay_pride_flag:"
@@ -96,8 +96,8 @@ class GroupFeed(commands.Cog):
             description_template = "%s **%s**\n**has gotten restricted lol**\nand has been removed from\nthe **%s**"
             color = 0x9e0000
 
-        what_group = "[%s](%s)" % (group_name, ("https://osu.ppy.sh/groups/%s" % group_id))
-        what_user = "[%s](https://osu.ppy.sh/users/%s)" % (username, event[1])
+        what_group = f"[{group_name}](https://osu.ppy.sh/groups/{group_id})"
+        what_user = f"[{username}](https://osu.ppy.sh/users/{event[1]})"
 
         description = description_template % (flag_sign, what_user, what_group)
 
@@ -126,7 +126,7 @@ class GroupFeed(commands.Cog):
                 await asyncio.sleep(5)
                 groupfeed_channel_list = db.query("SELECT channel_id FROM groupfeed_channel_list")
                 if groupfeed_channel_list:
-                    print(time.strftime("%X %x %Z")+" | performing groupfeed check")
+                    print(time.strftime("%X %x %Z") + " | performing groupfeed check")
                     await self.check_group(groupfeed_channel_list, "7", "Nomination Assessment Team")
                     await asyncio.sleep(120)
                     await self.check_group(groupfeed_channel_list, "28", "Beatmap Nominators")
@@ -140,7 +140,7 @@ class GroupFeed(commands.Cog):
                     await self.check_group(groupfeed_channel_list, "16", "osu! Alumni")
                     await asyncio.sleep(120)
                     await self.check_group(groupfeed_channel_list, "22", "Support Team")
-                    print(time.strftime("%X %x %Z")+" | finished groupfeed check")
+                    print(time.strftime("%X %x %Z") + " | finished groupfeed check")
                 await asyncio.sleep(1600)
             except Exception as e:
                 print(time.strftime("%X %x %Z"))
@@ -154,7 +154,7 @@ class GroupFeed(commands.Cog):
             color=color
         )
         embed.set_thumbnail(
-            url="https://a.ppy.sh/%s" % user_id
+            url=f"https://a.ppy.sh/{user_id}"
         )
         return embed
 

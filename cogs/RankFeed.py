@@ -83,9 +83,8 @@ class RankFeed(commands.Cog):
                                             db.query(["DELETE FROM rankfeed_channel_list "
                                                       "WHERE channel_id = ?",
                                                       [str(rankfeed_channel_id[0])]])
-                                            print("channel with id %s no longer exists "
-                                                  "so I am removing it from the list" %
-                                                  (str(rankfeed_channel_id[0])))
+                                            print(f"channel with id {rankfeed_channel_id[0]} no longer exists "
+                                                  "so I am removing it from the list")
                                     db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
                     print(time.strftime("%X %x %Z")+" | finished rankfeed check")
                 await asyncio.sleep(1600)
