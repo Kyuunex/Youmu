@@ -35,6 +35,7 @@ if not os.path.exists(database_file):
 initial_extensions = [
     "cogs.BotManagement",
     "cogs.GroupFeed",
+    "cogs.RankFeed",
     "cogs.RSSFeed",
     "cogs.UserEventFeed",
 ]
