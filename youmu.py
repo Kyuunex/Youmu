@@ -9,7 +9,7 @@ from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
 command_prefix = "."
-app_version = "a20191125"
+app_version = "a20191220"
 client = commands.Bot(command_prefix=command_prefix,
                       description=f"Youmu {app_version}")
 

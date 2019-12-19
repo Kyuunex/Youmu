@@ -46,6 +46,8 @@ class RankFeed(commands.Cog):
                         if fresh_entries:
                             for mapset_metadata in fresh_entries["beatmapsets"]:
                                 mapset_id = mapset_metadata["id"]
+                                if mapset_metadata["status"] == "loved":
+                                    continue
                                 if not db.query(["SELECT mapset_id FROM rankfeed_history "
                                                  "WHERE mapset_id = ?",
                                                  [str(mapset_id)]]):
