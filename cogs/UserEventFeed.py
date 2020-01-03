@@ -10,7 +10,9 @@ import osuembed
 class UserEventFeed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.usereventfeed_background_loop())
+        self.bot.background_tasks.append(
+            self.bot.loop.create_task(self.usereventfeed_background_loop())
+        )
 
     @commands.command(name="uef_track", brief="Track mapping activity of a specified user", description="")
     @commands.check(permissions.is_admin)

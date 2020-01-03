@@ -14,7 +14,9 @@ from modules import permissions
 class RSSFeed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.rssfeed_background_loop())
+        self.bot.background_tasks.append(
+            self.bot.loop.create_task(self.rssfeed_background_loop())
+        )
 
     @commands.command(name="rss_add", brief="Subscribe to an RSS feed in the current channel", description="")
     @commands.check(permissions.is_admin)

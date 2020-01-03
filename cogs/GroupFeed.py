@@ -12,7 +12,9 @@ from modules.connections import osuweb as osuweb
 class GroupFeed(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.bot.loop.create_task(self.groupfeed_background_loop())
+        self.bot.background_tasks.append(
+            self.bot.loop.create_task(self.groupfeed_background_loop())
+        )
 
     @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel", description="")
     @commands.check(permissions.is_admin)
