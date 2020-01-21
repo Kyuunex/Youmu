@@ -9,7 +9,6 @@ from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
 command_prefix = "."
-app_version = "a20200104"
 
 if not os.path.exists(database_file):
     db.query("CREATE TABLE config (setting, parent, value, flag)")
@@ -43,6 +42,8 @@ class Youmu(commands.Bot):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.background_tasks = []
+        self.app_version = (open(".version", "r+").read()).rstrip()
+        self.description = f"Youmu {self.app_version}"
 
         for extension in initial_extensions:
             try:
@@ -70,6 +71,5 @@ class Youmu(commands.Bot):
             print(f"Added {app_info.owner.name} to admin list")
 
 
-client = Youmu(command_prefix=command_prefix,
-               description=f"Youmu {app_version}")
+client = Youmu(command_prefix=command_prefix)
 client.run(bot_token)
