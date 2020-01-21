@@ -8,8 +8,6 @@ from modules import db
 from modules.connections import database_file as database_file
 from modules.connections import bot_token as bot_token
 
-command_prefix = "."
-
 if not os.path.exists(database_file):
     db.query("CREATE TABLE config (setting, parent, value, flag)")
     db.query("CREATE TABLE admins (user_id, permissions)")
@@ -71,5 +69,5 @@ class Youmu(commands.Bot):
             print(f"Added {app_info.owner.name} to admin list")
 
 
-client = Youmu(command_prefix=command_prefix)
+client = Youmu(command_prefix=".")
 client.run(bot_token)
