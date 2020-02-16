@@ -1,7 +1,9 @@
 import asyncio
 import time
+import discord
 from discord.ext import commands
 from modules import permissions
+from modules import wrappers
 from modules.connections import osu as osu
 import osuembed
 
@@ -71,6 +73,7 @@ class UserEventFeed(commands.Cog):
         async with await self.bot.db.execute("SELECT * FROM usereventfeed_tracklist") as cursor:
             tracklist = await cursor.fetchall()
         if tracklist:
+            buffer = ":notepad_spiral: **Track list**\n\n"
             for one_entry in tracklist:
                 async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels WHERE osu_id = ?",
                                                      [str(one_entry[0])]) as cursor:
@@ -79,7 +82,9 @@ class UserEventFeed(commands.Cog):
                 for destination_id in destination_list:
                     destination_list_str += f"<#{destination_id[0]}> "
                 if (str(channel.id) in destination_list_str) or everywhere:
-                    await channel.send(f"osu_id: `{one_entry[0]}` | channels: {destination_list_str}")
+                    buffer += f"osu_id: `{one_entry[0]}` | channels: {destination_list_str}"
+            embed = discord.Embed(color=0xff6781)
+            await wrappers.send_large_embed(channel, embed, buffer)
 
     async def usereventfeed_background_loop(self):
         print("UEF Loop launched!")
