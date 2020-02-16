@@ -7,7 +7,6 @@ from discord.ext import commands
 import re
 from html import unescape
 
-from modules import db
 from modules import permissions
 
 
@@ -24,41 +23,51 @@ class RSSFeed(commands.Cog):
         channel = ctx.channel
         online_entries = (feedparser.parse(await self.fetch(url)))["entries"]
         if online_entries:
-            if not db.query(["SELECT * FROM rssfeed_tracklist WHERE url = ?", [str(url)]]):
-                db.query(["INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)]])
+            async with await self.bot.db.execute("SELECT * FROM rssfeed_tracklist WHERE url = ?", [str(url)]) as cursor:
+                idk1 = await cursor.fetchall()
+            if not idk1:
+                await self.bot.db.execute("INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)])
 
             for one_entry in online_entries:
                 entry_id = one_entry["link"]
-                if not db.query(["SELECT * FROM rssfeed_history "
-                                 "WHERE url = ? AND entry_id = ?",
-                                 [str(url), str(entry_id)]]):
-                    db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
+                async with await self.bot.db.execute("SELECT * FROM rssfeed_history "
+                                                     "WHERE url = ? AND entry_id = ?",
+                                                     [str(url), str(entry_id)]) as cursor:
+                    idk2 = await cursor.fetchall()
+                if not idk2:
+                    await self.bot.db.execute("INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)])
 
-            if not db.query(["SELECT * FROM rssfeed_channels "
-                             "WHERE channel_id = ? AND url = ?",
-                             [str(channel.id), str(url)]]):
-                db.query(["INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)]])
+            async with await self.bot.db.execute("SELECT * FROM rssfeed_channels "
+                                                 "WHERE channel_id = ? AND url = ?",
+                                                 [str(channel.id), str(url)]) as cursor:
+                idk3 = await cursor.fetchall()
+            if not idk3:
+                await self.bot.db.execute("INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)])
                 await channel.send(f"Feed `{url}` is now tracked in this channel")
             else:
                 await channel.send(f"Feed `{url}` is already tracked in this channel")
+            await self.bot.db.commit()
 
     @commands.command(name="rss_remove", brief="Unsubscribe to an RSS feed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx, *, url):
         channel = ctx.channel
-        db.query(["DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ", [str(url), str(channel.id)]])
+        await self.bot.db.execute("DELETE FROM rssfeed_channels WHERE url = ? AND channel_id = ? ",
+                                  [str(url), str(channel.id)])
+        await self.bot.db.commit()
         await channel.send(f"Feed `{url}` is no longer tracked in this channel")
 
     @commands.command(name="rss_list", brief="Show a list of all RSS feeds being tracked", description="")
     @commands.check(permissions.is_admin)
     async def tracklist(self, ctx, everywhere=None):
         channel = ctx.channel
-        tracklist = db.query("SELECT * FROM rssfeed_tracklist")
+        async with await self.bot.db.execute("SELECT * FROM rssfeed_tracklist") as cursor:
+            tracklist = await cursor.fetchall()
         if tracklist:
             for one_entry in tracklist:
-                destination_list = db.query(["SELECT channel_id FROM rssfeed_channels "
-                                             "WHERE url = ?",
-                                             [str(one_entry[0])]])
+                async with await self.bot.db.execute("SELECT channel_id FROM rssfeed_channels WHERE url = ?",
+                                                     [str(one_entry[0])]) as cursor:
+                    destination_list = await cursor.fetchall()
                 destination_list_str = ""
                 for destination_id in destination_list:
                     destination_list_str += f"<#{destination_id[0]}> "
@@ -104,25 +113,33 @@ class RSSFeed(commands.Cog):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             await asyncio.sleep(10)
-            rssfeed_entries = db.query("SELECT url FROM rssfeed_tracklist")
+            async with await self.bot.db.execute("SELECT url FROM rssfeed_tracklist") as cursor:
+                rssfeed_entries = await cursor.fetchall()
             if rssfeed_entries:
                 for rssfeed_entry in rssfeed_entries:
                     url = rssfeed_entry[0]
-                    channel_list = db.query(["SELECT channel_id FROM rssfeed_channels WHERE url = ?", [str(url)]])
+                    async with await self.bot.db.execute("SELECT channel_id FROM rssfeed_channels WHERE url = ?",
+                                                         [str(url)]) as cursor:
+                        channel_list = await cursor.fetchall()
                     if channel_list:
                         print(f"checking {url}")
                         online_entries = (feedparser.parse(await self.fetch(url)))["entries"]
                         for one_entry in online_entries:
                             entry_id = one_entry["link"]
-                            if not db.query(["SELECT * FROM rssfeed_history "
-                                             "WHERE url = ? AND entry_id = ?",
-                                             [str(url), str(entry_id)]]):
+                            async with await self.bot.db.execute("SELECT * FROM rssfeed_history "
+                                                                 "WHERE url = ? AND entry_id = ?",
+                                                                 [str(url), str(entry_id)]) as cursor:
+                                idk_check = await cursor.fetchall()
+                            if not idk_check:
                                 for one_channel in channel_list:
                                     channel = self.bot.get_channel(int(one_channel[0]))
                                     await channel.send(embed=await self.rss_entry_embed(one_entry))
-                                db.query(["INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)]])
+                                await self.bot.db.execute("INSERT INTO rssfeed_history VALUES (?, ?)",
+                                                          [str(url), str(entry_id)])
+                                await self.bot.db.commit()
                     else:
-                        db.query(["DELETE FROM rssfeed_tracklist WHERE url = ?", [str(url)]])
+                        await self.bot.db.execute("DELETE FROM rssfeed_tracklist WHERE url = ?", [str(url)])
+                        await self.bot.db.commit()
                         print(f"{url} is not tracked in any channel so I am untracking it")
                 print(time.strftime("%X %x %Z"))
                 print("finished rss check")
