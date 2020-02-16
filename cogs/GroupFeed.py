@@ -19,13 +19,15 @@ class GroupFeed(commands.Cog):
     @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def add(self, ctx):
-        db.query(["INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
+        await self.bot.db.execute("INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
+        await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
     @commands.command(name="groupfeed_remove", brief="Remove a groupfeed from the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx):
-        db.query(["DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
+        await self.bot.db.execute("DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
+        await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
     async def compare_lists(self, list1, list2, reverse=False):
@@ -42,18 +44,25 @@ class GroupFeed(commands.Cog):
         return difference
 
     async def compare(self, result, lookup_value, table_name, lookup_key, update_db=True, reverse=False):
-        if not db.query([f"SELECT {lookup_key} FROM {table_name} WHERE {lookup_key} = ?", [lookup_value]]):
-            db.query([f"INSERT INTO {table_name} VALUES (?,?)", [lookup_value, json.dumps(result)]])
+        async with await self.bot.db.execute(f"SELECT {lookup_key} FROM {table_name} WHERE {lookup_key} = ?",
+                                             [lookup_value]) as cursor:
+            idk1 = await cursor.fetchall()
+        if not idk1:
+            await self.bot.db.execute(f"INSERT INTO {table_name} VALUES (?,?)", [lookup_value, json.dumps(result)])
+            await self.bot.db.commit()
             return None
         else:
             if result:
-                local_data = json.loads((db.query([f"SELECT contents FROM {table_name} "
-                                                   f"WHERE {lookup_key} = ?",
-                                                   [lookup_value]]))[0][0])
+                async with await self.bot.db.execute(f"SELECT contents FROM {table_name} "
+                                                     f"WHERE {lookup_key} = ?",
+                                                     [lookup_value]) as cursor:
+                    idk2 = await cursor.fetchall()
+                local_data = json.loads(idk2[0][0])
                 comparison = await self.compare_lists(result, local_data, reverse)
                 if update_db:
-                    db.query([f"UPDATE {table_name} SET contents = ? WHERE {lookup_key} = ?",
-                              [json.dumps(result), lookup_value]])
+                    await self.bot.db.execute(f"UPDATE {table_name} SET contents = ? WHERE {lookup_key} = ?",
+                                              [json.dumps(result), lookup_value])
+                    await self.bot.db.commit()
                 if comparison:
                     return comparison
                 else:
@@ -126,7 +135,8 @@ class GroupFeed(commands.Cog):
         while not self.bot.is_closed():
             try:
                 await asyncio.sleep(5)
-                groupfeed_channel_list = db.query("SELECT channel_id FROM groupfeed_channel_list")
+                async with await self.bot.db.execute("SELECT channel_id FROM groupfeed_channel_list") as cursor:
+                    groupfeed_channel_list = await cursor.fetchall()
                 if groupfeed_channel_list:
                     print(time.strftime("%X %x %Z") + " | performing groupfeed check")
                     await self.check_group(groupfeed_channel_list, "7", "Nomination Assessment Team")
