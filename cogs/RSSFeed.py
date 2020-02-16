@@ -8,6 +8,7 @@ import re
 from html import unescape
 
 from modules import permissions
+from modules import wrappers
 
 
 class RSSFeed(commands.Cog):
@@ -64,6 +65,7 @@ class RSSFeed(commands.Cog):
         async with await self.bot.db.execute("SELECT * FROM rssfeed_tracklist") as cursor:
             tracklist = await cursor.fetchall()
         if tracklist:
+            buffer = ":notepad_spiral: **Track list**\n\n"
             for one_entry in tracklist:
                 async with await self.bot.db.execute("SELECT channel_id FROM rssfeed_channels WHERE url = ?",
                                                      [str(one_entry[0])]) as cursor:
@@ -72,7 +74,9 @@ class RSSFeed(commands.Cog):
                 for destination_id in destination_list:
                     destination_list_str += f"<#{destination_id[0]}> "
                 if (str(channel.id) in destination_list_str) or everywhere:
-                    await channel.send(f"url: `{one_entry[0]}` | channels: {destination_list_str}")
+                    buffer += f"url: `{one_entry[0]}` | channels: {destination_list_str}"
+            embed = discord.Embed(color=0xff6781)
+            await wrappers.send_large_embed(channel, embed, buffer)
 
     async def rss_entry_embed(self, rss_object, color=0xbd3661):
         if rss_object:
