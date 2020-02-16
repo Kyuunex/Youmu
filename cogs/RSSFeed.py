@@ -74,7 +74,7 @@ class RSSFeed(commands.Cog):
                 for destination_id in destination_list:
                     destination_list_str += f"<#{destination_id[0]}> "
                 if (str(channel.id) in destination_list_str) or everywhere:
-                    buffer += f"url: `{one_entry[0]}` | channels: {destination_list_str}"
+                    buffer += f"url: `{one_entry[0]}` | channels: {destination_list_str}\n"
             embed = discord.Embed(color=0xff6781)
             await wrappers.send_large_embed(channel, embed, buffer)
 
