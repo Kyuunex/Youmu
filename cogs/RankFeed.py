@@ -1,8 +1,10 @@
 import time
 import asyncio
+import discord
 from discord.ext import commands
 
 from modules import permissions
+from modules import wrappers
 from modules.connections import osuweb as osuweb
 import osuwebembed
 
@@ -40,6 +42,21 @@ class RankFeed(commands.Cog):
         await self.bot.db.execute("DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
+
+    @commands.command(name="rankfeed_tracklist",
+                      brief="Show a list of channels where rankfeed is sent",
+                      description="")
+    @commands.check(permissions.is_admin)
+    async def tracklist(self, ctx):
+        channel = ctx.channel
+        async with await self.bot.db.execute("SELECT channel_id FROM rankfeed_channel_list") as cursor:
+            tracklist = await cursor.fetchall()
+        if tracklist:
+            buffer = ":notepad_spiral: **Channel list**\n\n"
+            for one_entry in tracklist:
+                buffer += f"<#{one_entry[0]}>\n"
+            embed = discord.Embed(color=0xff6781)
+            await wrappers.send_large_embed(channel, embed, buffer)
 
     async def rankfeed_background_loop(self):
         print("RankFeed Loop launched!")
