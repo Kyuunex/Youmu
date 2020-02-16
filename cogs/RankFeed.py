@@ -2,7 +2,6 @@ import time
 import asyncio
 from discord.ext import commands
 
-from modules import db
 from modules import permissions
 from modules.connections import osuweb as osuweb
 import osuwebembed
@@ -22,16 +21,24 @@ class RankFeed(commands.Cog):
         if fresh_entries:
             for mapset_metadata in fresh_entries["beatmapsets"]:
                 mapset_id = mapset_metadata["id"]
-                if not db.query(["SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?", [str(mapset_id)]]):
-                    db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
-            if not db.query(["SELECT * FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]]):
-                db.query(["INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)]])
+                async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
+                                                     [str(mapset_id)]) as cursor:
+                    check_one = await cursor.fetchall()
+                if not check_one:
+                    await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
+            async with await self.bot.db.execute("SELECT * FROM rankfeed_channel_list WHERE channel_id = ?",
+                                                 [str(ctx.channel.id)]) as cursor:
+                check_two = await cursor.fetchall()
+            if not check_two:
+                await self.bot.db.execute("INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
                 await ctx.send(":ok_hand:")
+            await self.bot.db.commit()
 
     @commands.command(name="rankfeed_remove", brief="Remove a rankfeed from the current channel", description="")
     @commands.check(permissions.is_admin)
     async def remove(self, ctx):
-        db.query(["DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)]])
+        await self.bot.db.execute("DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
+        await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
     async def rankfeed_background_loop(self):
@@ -40,19 +47,24 @@ class RankFeed(commands.Cog):
         while not self.bot.is_closed():
             try:
                 await asyncio.sleep(10)
-                rankfeed_channel_list = db.query("SELECT channel_id FROM rankfeed_channel_list")
+                async with await self.bot.db.execute("SELECT channel_id FROM rankfeed_channel_list") as cursor:
+                    rankfeed_channel_list = await cursor.fetchall()
                 if rankfeed_channel_list:
-                    if db.query("SELECT mapset_id FROM rankfeed_history"):
-                        print(time.strftime("%X %x %Z")+" | performing rankfeed check")
+                    async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history") as cursor:
+                        rankfeed_history_check = await cursor.fetchall()
+                    if rankfeed_history_check:
+                        print(time.strftime("%X %x %Z") + " | performing rankfeed check")
                         fresh_entries = await osuweb.get_latest_ranked_beatmapsets()
                         if fresh_entries:
                             for mapset_metadata in fresh_entries["beatmapsets"]:
                                 mapset_id = mapset_metadata["id"]
                                 if mapset_metadata["status"] == "loved":
                                     continue
-                                if not db.query(["SELECT mapset_id FROM rankfeed_history "
-                                                 "WHERE mapset_id = ?",
-                                                 [str(mapset_id)]]):
+                                async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history "
+                                                                     "WHERE mapset_id = ?",
+                                                                     [str(mapset_id)]) as cursor:
+                                    in_rankfeed_history_check = await cursor.fetchall()
+                                if not in_rankfeed_history_check:
                                     embed = await osuwebembed.beatmapset(mapset_metadata, color=0xffc85a)
                                     if embed:
                                         for rankfeed_channel_id in rankfeed_channel_list:
@@ -60,13 +72,16 @@ class RankFeed(commands.Cog):
                                             if channel:
                                                 await channel.send(embed=embed)
                                             else:
-                                                db.query(["DELETE FROM rankfeed_channel_list "
-                                                          "WHERE channel_id = ?",
-                                                          [str(rankfeed_channel_id[0])]])
+                                                await self.bot.db.execute("DELETE FROM rankfeed_channel_list "
+                                                                          "WHERE channel_id = ?",
+                                                                          [str(rankfeed_channel_id[0])])
+                                                await self.bot.db.commit()
                                                 print(f"channel with id {rankfeed_channel_id[0]} no longer exists "
                                                       "so I am removing it from the list")
-                                        db.query(["INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)]])
-                        print(time.strftime("%X %x %Z")+" | finished rankfeed check")
+                                        await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)",
+                                                                  [str(mapset_id)])
+                                        await self.bot.db.commit()
+                        print(time.strftime("%X %x %Z") + " | finished rankfeed check")
                     else:
                         print("no maps in history so i stop so i don't spam")
                 await asyncio.sleep(1600)
