@@ -1,7 +1,6 @@
 import asyncio
 import time
 from discord.ext import commands
-from modules import db
 from modules import permissions
 from modules.connections import osu as osu
 import osuembed
@@ -20,21 +19,31 @@ class UserEventFeed(commands.Cog):
         channel = ctx.channel
         user = await osu.get_user(u=user_id)
         if user:
-            if not db.query(["SELECT * FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]]):
-                db.query(["INSERT INTO usereventfeed_tracklist VALUES (?)", [str(user.id)]])
+            async with await self.bot.db.execute("SELECT * FROM usereventfeed_tracklist WHERE osu_id = ?",
+                                                 [str(user.id)]) as cursor:
+                idk1 = await cursor.fetchall()
+            if not idk1:
+                await self.bot.db.execute("INSERT INTO usereventfeed_tracklist VALUES (?)", [str(user.id)])
 
             for event in user.events:
-                if not db.query(["SELECT * FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
-                    db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
-                              [str(user.id), str(event.id), str(int(time.time()))]])
+                async with await self.bot.db.execute("SELECT * FROM usereventfeed_history WHERE event_id = ?",
+                                                     [str(event.id)]) as cursor:
+                    idk2 = await cursor.fetchall()
+                if not idk2:
+                    await self.bot.db.execute("INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
+                                              [str(user.id), str(event.id), str(int(time.time()))])
 
-            if not db.query(["SELECT * FROM usereventfeed_channels "
-                             "WHERE channel_id = ? AND osu_id = ?",
-                             [str(channel.id), str(user.id)]]):
-                db.query(["INSERT INTO usereventfeed_channels VALUES (?, ?)", [str(user.id), str(channel.id)]])
+            async with await self.bot.db.execute("SELECT * FROM usereventfeed_channels "
+                                                 "WHERE channel_id = ? AND osu_id = ?",
+                                                 [str(channel.id), str(user.id)]) as cursor:
+                idk3 = await cursor.fetchall()
+            if not idk3:
+                await self.bot.db.execute("INSERT INTO usereventfeed_channels VALUES (?, ?)",
+                                          [str(user.id), str(channel.id)])
                 await channel.send(f"Tracked `{user.name}` in this channel")
             else:
                 await channel.send(f"User `{user.name}` is already tracked in this channel")
+            await self.bot.db.commit()
 
     @commands.command(name="uef_untrack", brief="Stop tracking the mapping activity of the specified user",
                       description="")
@@ -47,9 +56,10 @@ class UserEventFeed(commands.Cog):
             user_name = user.name
         else:
             user_name = user_id
-        db.query(["DELETE FROM usereventfeed_channels "
-                  "WHERE osu_id = ? AND channel_id = ? ",
-                  [str(user_id), str(channel.id)]])
+        await self.bot.db.execute("DELETE FROM usereventfeed_channels "
+                                  "WHERE osu_id = ? AND channel_id = ? ",
+                                  [str(user_id), str(channel.id)])
+        await self.bot.db.commit()
         await channel.send(f"`{user_name}` is no longer tracked in this channel")
 
     @commands.command(name="uef_tracklist",
@@ -58,12 +68,13 @@ class UserEventFeed(commands.Cog):
     @commands.check(permissions.is_admin)
     async def tracklist(self, ctx, everywhere=None):
         channel = ctx.channel
-        tracklist = db.query("SELECT * FROM usereventfeed_tracklist")
+        async with await self.bot.db.execute("SELECT * FROM usereventfeed_tracklist") as cursor:
+            tracklist = await cursor.fetchall()
         if tracklist:
             for one_entry in tracklist:
-                destination_list = db.query(["SELECT channel_id FROM usereventfeed_channels "
-                                             "WHERE osu_id = ?",
-                                             [str(one_entry[0])]])
+                async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels WHERE osu_id = ?",
+                                                     [str(one_entry[0])]) as cursor:
+                    destination_list = await cursor.fetchall()
                 destination_list_str = ""
                 for destination_id in destination_list:
                     destination_list_str += f"<#{destination_id[0]}> "
@@ -76,7 +87,8 @@ class UserEventFeed(commands.Cog):
         while not self.bot.is_closed():
             try:
                 await asyncio.sleep(10)
-                tracklist = db.query("SELECT osu_id FROM usereventfeed_tracklist")
+                async with await self.bot.db.execute("SELECT osu_id FROM usereventfeed_tracklist") as cursor:
+                    tracklist = await cursor.fetchall()
                 if tracklist:
                     print(time.strftime("%X %x %Z") + " | performing user event check")
                     for user_id in tracklist:
@@ -92,28 +104,35 @@ class UserEventFeed(commands.Cog):
     async def prepare_to_check(self, user_id):
         user = await osu.get_user(u=user_id, event_days="2")
         if user:
-            channel_list = db.query(["SELECT channel_id FROM usereventfeed_channels "
-                                     "WHERE osu_id = ?",
-                                     [str(user.id)]])
+            async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels "
+                                                 "WHERE osu_id = ?",
+                                                 [str(user.id)]) as cursor:
+                channel_list = await cursor.fetchall()
             if channel_list:
                 final_channel_list = []
                 for channel in channel_list:
                     final_channel_list.append(int(channel[0]))
                 await self.check_events(final_channel_list, user)
             else:
-                db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
+                await self.bot.db.execute("DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)])
+                await self.bot.db.commit()
                 print(f"{user.id} is not tracked in any channel so I am untracking them")
         else:
             print(f"{user_id} is restricted, untracking everywhere")
-            db.query(["DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)]])
-            db.query(["DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)]])
+            await self.bot.db.execute("DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)])
+            await self.bot.db.execute("DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)])
+            await self.bot.db.commit()
 
     async def check_events(self, channel_list, user):
         print(time.strftime("%X %x %Z") + f" | currently checking {user.name}")
         for event in user.events:
-            if not db.query(["SELECT event_id FROM usereventfeed_history WHERE event_id = ?", [str(event.id)]]):
-                db.query(["INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
-                          [str(user.id), str(event.id), str(int(time.time()))]])
+            async with await self.bot.db.execute("SELECT event_id FROM usereventfeed_history WHERE event_id = ?",
+                                                 [str(event.id)]) as cursor:
+                idk1 = await cursor.fetchall()
+            if not idk1:
+                await self.bot.db.execute("INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
+                                          [str(user.id), str(event.id), str(int(time.time()))])
+                await self.bot.db.commit()
                 event_color = await self.get_event_color(event.display_text)
                 if event_color:
                     result = await osu.get_beatmapset(s=event.beatmapset_id)
