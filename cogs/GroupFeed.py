@@ -3,7 +3,7 @@ import time
 import asyncio
 import discord
 from discord.ext import commands
-from modules import db
+from modules import wrappers
 from modules import permissions
 from modules.connections import osu as osu
 from modules.connections import osuweb as osuweb
@@ -29,6 +29,21 @@ class GroupFeed(commands.Cog):
         await self.bot.db.execute("DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
+
+    @commands.command(name="groupfeed_tracklist",
+                      brief="Show a list of channels where groupfeed is sent",
+                      description="")
+    @commands.check(permissions.is_admin)
+    async def tracklist(self, ctx):
+        channel = ctx.channel
+        async with await self.bot.db.execute("SELECT channel_id FROM groupfeed_channel_list") as cursor:
+            tracklist = await cursor.fetchall()
+        if tracklist:
+            buffer = ":notepad_spiral: **Channel list**\n\n"
+            for one_entry in tracklist:
+                buffer += f"<#{one_entry[0]}>\n"
+            embed = discord.Embed(color=0xff6781)
+            await wrappers.send_large_embed(channel, embed, buffer)
 
     async def compare_lists(self, list1, list2, reverse=False):
         difference = []
