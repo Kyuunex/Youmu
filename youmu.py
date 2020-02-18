@@ -43,6 +43,9 @@ class Youmu(commands.Bot):
         for task in self.background_tasks:
             task.cancel()
         
+        # Close connection to the database
+        await self.db.close()
+
         # Run actual discord.py close.
         await super().close()
 
