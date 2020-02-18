@@ -25,6 +25,7 @@ class Youmu(commands.Bot):
         self.background_tasks = []
         self.app_version = (open(".version", "r+").read()).rstrip()
         self.description = f"Youmu {self.app_version}"
+        self.database_file = database_file
 
         for extension in initial_extensions:
             try:
@@ -33,7 +34,7 @@ class Youmu(commands.Bot):
                 print(e)
 
     async def start(self, *args, **kwargs):
-        self.db = await aiosqlite.connect(database_file)
+        self.db = await aiosqlite.connect(self.database_file)
 
         await super().start(*args, **kwargs)
 
