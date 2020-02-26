@@ -57,7 +57,6 @@ class RankFeed(commands.Cog):
                       description="")
     @commands.check(permissions.is_admin)
     async def tracklist(self, ctx):
-        channel = ctx.channel
         async with await self.bot.db.execute("SELECT channel_id FROM rankfeed_channel_list") as cursor:
             tracklist = await cursor.fetchall()
         if not tracklist:
@@ -68,7 +67,7 @@ class RankFeed(commands.Cog):
         for one_entry in tracklist:
             buffer += f"<#{one_entry[0]}>\n"
         embed = discord.Embed(color=0xff6781)
-        await wrappers.send_large_embed(channel, embed, buffer)
+        await wrappers.send_large_embed(ctx.channel, embed, buffer)
 
     async def rankfeed_background_loop(self):
         print("RankFeed Loop launched!")
