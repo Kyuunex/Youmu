@@ -24,6 +24,13 @@ async def send_large_embed(channel, embed, contents):
         await channel.send(embed=embed)
 
 
+def in_db_list(a_list, what):
+    for item in a_list:
+        if what == item[0]:
+            return True
+    return False
+
+
 def get_member_guaranteed(ctx, lookup):
     if len(ctx.message.mentions) > 0:
         return ctx.message.mentions[0]
