@@ -9,7 +9,7 @@ from aioosuwebapi import aioosuwebapi
 from modules import first_run
 
 from modules.connections import bot_token as bot_token
-from modules.connections import bot_token as osu_api_key
+from modules.connections import osu_api_key as osu_api_key
 from modules.connections import database_file as database_file
 
 first_run.create_tables()
