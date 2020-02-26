@@ -23,23 +23,23 @@ class UserEventFeed(commands.Cog):
         if user:
             async with await self.bot.db.execute("SELECT * FROM usereventfeed_tracklist WHERE osu_id = ?",
                                                  [str(user.id)]) as cursor:
-                idk1 = await cursor.fetchall()
-            if not idk1:
+                check_is_already_tracked = await cursor.fetchall()
+            if not check_is_already_tracked:
                 await self.bot.db.execute("INSERT INTO usereventfeed_tracklist VALUES (?)", [str(user.id)])
 
             for event in user.events:
                 async with await self.bot.db.execute("SELECT * FROM usereventfeed_history WHERE event_id = ?",
                                                      [str(event.id)]) as cursor:
-                    idk2 = await cursor.fetchall()
-                if not idk2:
+                    check_is_already_in_history = await cursor.fetchall()
+                if not check_is_already_in_history:
                     await self.bot.db.execute("INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
                                               [str(user.id), str(event.id), str(int(time.time()))])
 
             async with await self.bot.db.execute("SELECT * FROM usereventfeed_channels "
                                                  "WHERE channel_id = ? AND osu_id = ?",
                                                  [str(channel.id), str(user.id)]) as cursor:
-                idk3 = await cursor.fetchall()
-            if not idk3:
+                check_is_channel_already_tracked = await cursor.fetchall()
+            if not check_is_channel_already_tracked:
                 await self.bot.db.execute("INSERT INTO usereventfeed_channels VALUES (?, ?)",
                                           [str(user.id), str(channel.id)])
                 await channel.send(f"Tracked `{user.name}` in this channel")
@@ -133,8 +133,8 @@ class UserEventFeed(commands.Cog):
         for event in user.events:
             async with await self.bot.db.execute("SELECT event_id FROM usereventfeed_history WHERE event_id = ?",
                                                  [str(event.id)]) as cursor:
-                idk1 = await cursor.fetchall()
-            if not idk1:
+                check_is_entry_in_history = await cursor.fetchall()
+            if not check_is_entry_in_history:
                 await self.bot.db.execute("INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
                                           [str(user.id), str(event.id), str(int(time.time()))])
                 await self.bot.db.commit()

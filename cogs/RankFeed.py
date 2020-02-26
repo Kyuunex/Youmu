@@ -25,13 +25,13 @@ class RankFeed(commands.Cog):
                 mapset_id = mapset_metadata["id"]
                 async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
                                                      [str(mapset_id)]) as cursor:
-                    check_one = await cursor.fetchall()
-                if not check_one:
+                    check_is_already_in_history = await cursor.fetchall()
+                if not check_is_already_in_history:
                     await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
             async with await self.bot.db.execute("SELECT * FROM rankfeed_channel_list WHERE channel_id = ?",
                                                  [str(ctx.channel.id)]) as cursor:
-                check_two = await cursor.fetchall()
-            if not check_two:
+                check_is_channel_already_tracked = await cursor.fetchall()
+            if not check_is_channel_already_tracked:
                 await self.bot.db.execute("INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
                 await ctx.send(":ok_hand:")
             await self.bot.db.commit()
@@ -78,10 +78,9 @@ class RankFeed(commands.Cog):
                                 if mapset_metadata["status"] == "loved":
                                     continue
                                 async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history "
-                                                                     "WHERE mapset_id = ?",
-                                                                     [str(mapset_id)]) as cursor:
-                                    in_rankfeed_history_check = await cursor.fetchall()
-                                if not in_rankfeed_history_check:
+                                                                     "WHERE mapset_id = ?", [str(mapset_id)]) as cursor:
+                                    check_is_already_in_history = await cursor.fetchall()
+                                if not check_is_already_in_history:
                                     embed = await osuwebembed.beatmapset(mapset_metadata, color=0xffc85a)
                                     if embed:
                                         for rankfeed_channel_id in rankfeed_channel_list:

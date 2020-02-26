@@ -61,8 +61,8 @@ class GroupFeed(commands.Cog):
     async def compare(self, result, lookup_value, table_name, lookup_key, update_db=True, reverse=False):
         async with await self.bot.db.execute(f"SELECT {lookup_key} FROM {table_name} WHERE {lookup_key} = ?",
                                              [lookup_value]) as cursor:
-            idk1 = await cursor.fetchall()
-        if not idk1:
+            check_is_already_in_table = await cursor.fetchall()
+        if not check_is_already_in_table:
             await self.bot.db.execute(f"INSERT INTO {table_name} VALUES (?,?)", [lookup_value, json.dumps(result)])
             await self.bot.db.commit()
             return None
@@ -71,8 +71,8 @@ class GroupFeed(commands.Cog):
                 async with await self.bot.db.execute(f"SELECT contents FROM {table_name} "
                                                      f"WHERE {lookup_key} = ?",
                                                      [lookup_value]) as cursor:
-                    idk2 = await cursor.fetchall()
-                local_data = json.loads(idk2[0][0])
+                    db_contents = await cursor.fetchall()
+                local_data = json.loads(db_contents[0][0])
                 comparison = await self.compare_lists(result, local_data, reverse)
                 if update_db:
                     await self.bot.db.execute(f"UPDATE {table_name} SET contents = ? WHERE {lookup_key} = ?",

@@ -25,24 +25,22 @@ class RSSFeed(commands.Cog):
         online_entries = (feedparser.parse(await self.fetch(url)))["entries"]
         if online_entries:
             async with await self.bot.db.execute("SELECT * FROM rssfeed_tracklist WHERE url = ?", [str(url)]) as cursor:
-                idk1 = await cursor.fetchall()
-            if not idk1:
+                check_is_already_tracked = await cursor.fetchall()
+            if not check_is_already_tracked:
                 await self.bot.db.execute("INSERT INTO rssfeed_tracklist VALUES (?)", [str(url)])
 
             for one_entry in online_entries:
                 entry_id = one_entry["link"]
-                async with await self.bot.db.execute("SELECT * FROM rssfeed_history "
-                                                     "WHERE url = ? AND entry_id = ?",
+                async with await self.bot.db.execute("SELECT * FROM rssfeed_history WHERE url = ? AND entry_id = ?",
                                                      [str(url), str(entry_id)]) as cursor:
-                    idk2 = await cursor.fetchall()
-                if not idk2:
+                    check_is_entry_in_history = await cursor.fetchall()
+                if not check_is_entry_in_history:
                     await self.bot.db.execute("INSERT INTO rssfeed_history VALUES (?, ?)", [str(url), str(entry_id)])
 
-            async with await self.bot.db.execute("SELECT * FROM rssfeed_channels "
-                                                 "WHERE channel_id = ? AND url = ?",
+            async with await self.bot.db.execute("SELECT * FROM rssfeed_channels WHERE channel_id = ? AND url = ?",
                                                  [str(channel.id), str(url)]) as cursor:
-                idk3 = await cursor.fetchall()
-            if not idk3:
+                check_is_channel_already_tracked = await cursor.fetchall()
+            if not check_is_channel_already_tracked:
                 await self.bot.db.execute("INSERT INTO rssfeed_channels VALUES (?, ?)", [str(url), str(channel.id)])
                 await channel.send(f"Feed `{url}` is now tracked in this channel")
             else:
@@ -133,8 +131,8 @@ class RSSFeed(commands.Cog):
                             async with await self.bot.db.execute("SELECT * FROM rssfeed_history "
                                                                  "WHERE url = ? AND entry_id = ?",
                                                                  [str(url), str(entry_id)]) as cursor:
-                                idk_check = await cursor.fetchall()
-                            if not idk_check:
+                                check_is_already_in_history = await cursor.fetchall()
+                            if not check_is_already_in_history:
                                 for one_channel in channel_list:
                                     channel = self.bot.get_channel(int(one_channel[0]))
                                     await channel.send(embed=await self.rss_entry_embed(one_entry))
