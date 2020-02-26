@@ -1,3 +1,11 @@
+"""
+I am well aware that this is badly done,
+The only reason this still exists is because it works
+I wrote a better version of this but it didn't pass all the tests
+and I haven't gotten around to working on it some more.
+"""
+
+
 import json
 import time
 import asyncio
