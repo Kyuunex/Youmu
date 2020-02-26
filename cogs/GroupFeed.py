@@ -155,7 +155,8 @@ class GroupFeed(commands.Cog):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
             try:
-                await asyncio.sleep(5)
+                await asyncio.sleep(10)
+
                 async with await self.bot.db.execute("SELECT channel_id FROM groupfeed_channel_list") as cursor:
                     groupfeed_channel_list = await cursor.fetchall()
                 if groupfeed_channel_list:
