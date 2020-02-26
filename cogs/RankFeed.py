@@ -19,21 +19,31 @@ class RankFeed(commands.Cog):
     @commands.check(permissions.is_admin)
     async def add(self, ctx):
         fresh_entries = await self.bot.osuweb.get_latest_ranked_beatmapsets()
-        if fresh_entries:
-            for mapset_metadata in fresh_entries["beatmapsets"]:
-                mapset_id = mapset_metadata["id"]
-                async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
-                                                     [str(mapset_id)]) as cursor:
-                    check_is_already_in_history = await cursor.fetchall()
-                if not check_is_already_in_history:
-                    await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
-            async with await self.bot.db.execute("SELECT * FROM rankfeed_channel_list WHERE channel_id = ?",
-                                                 [str(ctx.channel.id)]) as cursor:
-                check_is_channel_already_tracked = await cursor.fetchall()
-            if not check_is_channel_already_tracked:
-                await self.bot.db.execute("INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
-                await ctx.send(":ok_hand:")
-            await self.bot.db.commit()
+        if not fresh_entries:
+            await ctx.send("Connection issues with osu website???")
+            return None
+
+        for mapset_metadata in fresh_entries["beatmapsets"]:
+            mapset_id = mapset_metadata["id"]
+            async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
+                                                 [str(mapset_id)]) as cursor:
+                check_is_already_in_history = await cursor.fetchall()
+            if not check_is_already_in_history:
+                await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
+
+        await self.bot.db.commit()
+
+        async with await self.bot.db.execute("SELECT * FROM rankfeed_channel_list WHERE channel_id = ?",
+                                             [str(ctx.channel.id)]) as cursor:
+            check_is_channel_already_tracked = await cursor.fetchall()
+        if check_is_channel_already_tracked:
+            await ctx.send("Rankfeed is already tracked in this channel")
+            return None
+
+        await self.bot.db.execute("INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
+        await ctx.send(":ok_hand:")
+
+        await self.bot.db.commit()
 
     @commands.command(name="rankfeed_remove", brief="Remove a rankfeed from the current channel", description="")
     @commands.check(permissions.is_admin)
@@ -50,12 +60,15 @@ class RankFeed(commands.Cog):
         channel = ctx.channel
         async with await self.bot.db.execute("SELECT channel_id FROM rankfeed_channel_list") as cursor:
             tracklist = await cursor.fetchall()
-        if tracklist:
-            buffer = ":notepad_spiral: **Channel list**\n\n"
-            for one_entry in tracklist:
-                buffer += f"<#{one_entry[0]}>\n"
-            embed = discord.Embed(color=0xff6781)
-            await wrappers.send_large_embed(channel, embed, buffer)
+        if not tracklist:
+            await ctx.send("Rankfeed tracklist is empty")
+            return None
+
+        buffer = ":notepad_spiral: **Channel list**\n\n"
+        for one_entry in tracklist:
+            buffer += f"<#{one_entry[0]}>\n"
+        embed = discord.Embed(color=0xff6781)
+        await wrappers.send_large_embed(channel, embed, buffer)
 
     async def rankfeed_background_loop(self):
         print("RankFeed Loop launched!")
@@ -63,42 +76,61 @@ class RankFeed(commands.Cog):
         while not self.bot.is_closed():
             try:
                 await asyncio.sleep(10)
+
                 async with await self.bot.db.execute("SELECT channel_id FROM rankfeed_channel_list") as cursor:
                     rankfeed_channel_list = await cursor.fetchall()
-                if rankfeed_channel_list:
-                    async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history") as cursor:
-                        rankfeed_history_check = await cursor.fetchall()
-                    if rankfeed_history_check:
-                        print(time.strftime("%X %x %Z") + " | performing rankfeed check")
-                        fresh_entries = await self.bot.osuweb.get_latest_ranked_beatmapsets()
-                        if fresh_entries:
-                            for mapset_metadata in fresh_entries["beatmapsets"]:
-                                mapset_id = mapset_metadata["id"]
-                                if mapset_metadata["status"] == "loved":
-                                    continue
-                                async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history "
-                                                                     "WHERE mapset_id = ?", [str(mapset_id)]) as cursor:
-                                    check_is_already_in_history = await cursor.fetchall()
-                                if not check_is_already_in_history:
-                                    embed = await osuwebembed.beatmapset(mapset_metadata, color=0xffc85a)
-                                    if embed:
-                                        for rankfeed_channel_id in rankfeed_channel_list:
-                                            channel = self.bot.get_channel(int(rankfeed_channel_id[0]))
-                                            if channel:
-                                                await channel.send(embed=embed)
-                                            else:
-                                                await self.bot.db.execute("DELETE FROM rankfeed_channel_list "
-                                                                          "WHERE channel_id = ?",
-                                                                          [str(rankfeed_channel_id[0])])
-                                                await self.bot.db.commit()
-                                                print(f"channel with id {rankfeed_channel_id[0]} no longer exists "
-                                                      "so I am removing it from the list")
-                                        await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)",
-                                                                  [str(mapset_id)])
-                                        await self.bot.db.commit()
-                        print(time.strftime("%X %x %Z") + " | finished rankfeed check")
-                    else:
-                        print("no maps in history so i stop so i don't spam")
+                if not rankfeed_channel_list:
+                    # Rankfeed is not enabled
+                    await asyncio.sleep(1600)
+                    continue
+
+                async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history") as cursor:
+                    rankfeed_history_check = await cursor.fetchall()
+                if not rankfeed_history_check:
+                    print("no maps in history so i stop so i don't spam")
+                    await asyncio.sleep(1600)
+                    continue
+
+                print(time.strftime("%X %x %Z") + " | performing rankfeed check")
+
+                fresh_entries = await self.bot.osuweb.get_latest_ranked_beatmapsets()
+                if not fresh_entries:
+                    print("rankfeed connection issues with osu website???")
+                    await asyncio.sleep(1600)
+                    continue
+
+                for mapset_metadata in fresh_entries["beatmapsets"]:
+                    if mapset_metadata["status"] == "loved":
+                        continue
+
+                    mapset_id = mapset_metadata["id"]
+                    async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
+                                                         [str(mapset_id)]) as cursor:
+                        check_is_already_in_history = await cursor.fetchall()
+                    if check_is_already_in_history:
+                        continue
+
+                    embed = await osuwebembed.beatmapset(mapset_metadata, color=0xffc85a)
+                    if not embed:
+                        print("rankfeed embed returned nothing. this should not happen")
+                        continue
+
+                    for rankfeed_channel_id in rankfeed_channel_list:
+                        channel = self.bot.get_channel(int(rankfeed_channel_id[0]))
+                        if not channel:
+                            await self.bot.db.execute("DELETE FROM rankfeed_channel_list WHERE channel_id = ?",
+                                                      [str(rankfeed_channel_id[0])])
+                            await self.bot.db.commit()
+                            print(f"channel with id {rankfeed_channel_id[0]} no longer exists "
+                                  "so I am removing it from the list")
+                            continue
+
+                        await channel.send(embed=embed)
+
+                    await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
+                    await self.bot.db.commit()
+
+                print(time.strftime("%X %x %Z") + " | finished rankfeed check")
                 await asyncio.sleep(1600)
             except Exception as e:
                 print(time.strftime("%X %x %Z"))
