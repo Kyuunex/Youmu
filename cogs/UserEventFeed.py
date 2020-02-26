@@ -4,7 +4,6 @@ import discord
 from discord.ext import commands
 from modules import permissions
 from modules import wrappers
-from modules.connections import osu as osu
 import osuembed
 
 
@@ -19,7 +18,7 @@ class UserEventFeed(commands.Cog):
     @commands.check(permissions.is_admin)
     async def track(self, ctx, user_id):
         channel = ctx.channel
-        user = await osu.get_user(u=user_id)
+        user = await self.bot.osu.get_user(u=user_id)
         if user:
             async with await self.bot.db.execute("SELECT * FROM usereventfeed_tracklist WHERE osu_id = ?",
                                                  [str(user.id)]) as cursor:
@@ -52,7 +51,7 @@ class UserEventFeed(commands.Cog):
     @commands.check(permissions.is_admin)
     async def untrack(self, ctx, user_id):
         channel = ctx.channel
-        user = await osu.get_user(u=user_id)
+        user = await self.bot.osu.get_user(u=user_id)
         if user:
             user_id = user.id
             user_name = user.name
@@ -107,7 +106,7 @@ class UserEventFeed(commands.Cog):
                 await asyncio.sleep(7200)
 
     async def prepare_to_check(self, user_id):
-        user = await osu.get_user(u=user_id, event_days="2")
+        user = await self.bot.osu.get_user(u=user_id, event_days="2")
         if user:
             async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels "
                                                  "WHERE osu_id = ?",
@@ -140,7 +139,7 @@ class UserEventFeed(commands.Cog):
                 await self.bot.db.commit()
                 event_color = await self.get_event_color(event.display_text)
                 if event_color:
-                    result = await osu.get_beatmapset(s=event.beatmapset_id)
+                    result = await self.bot.osu.get_beatmapset(s=event.beatmapset_id)
                     embed = await osuembed.beatmapset(result, event_color)
                     if embed:
                         display_text = event.display_text.replace("@", "")

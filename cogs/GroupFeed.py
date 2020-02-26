@@ -13,8 +13,6 @@ import discord
 from discord.ext import commands
 from modules import wrappers
 from modules import permissions
-from modules.connections import osu as osu
-from modules.connections import osuweb as osuweb
 
 
 class GroupFeed(commands.Cog):
@@ -119,7 +117,7 @@ class GroupFeed(commands.Cog):
             description_template = "%s **%s**\nhas been added to\nthe **%s**"
             color = 0xffbd0e
 
-        user = await osu.get_user(u=event[1])
+        user = await self.bot.osu.get_user(u=event[1])
         if user:
             flag_sign = f":flag_{user.country.lower()}:"
             username = user.name
@@ -142,7 +140,7 @@ class GroupFeed(commands.Cog):
                 await channel.send(embed=embed)
 
     async def check_group(self, groupfeed_channel_list, group_id, group_name):
-        group_members = await osuweb.get_group_members(group_id)
+        group_members = await self.bot.osuweb.get_group_members(group_id)
         if group_members:
             events = await self.get_changes(group_members, group_id)
             if events:

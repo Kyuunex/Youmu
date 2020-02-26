@@ -5,7 +5,6 @@ from discord.ext import commands
 
 from modules import permissions
 from modules import wrappers
-from modules.connections import osuweb as osuweb
 import osuwebembed
 
 
@@ -19,7 +18,7 @@ class RankFeed(commands.Cog):
     @commands.command(name="rankfeed_add", brief="Add a rankfeed in the current channel", description="")
     @commands.check(permissions.is_admin)
     async def add(self, ctx):
-        fresh_entries = await osuweb.get_latest_ranked_beatmapsets()
+        fresh_entries = await self.bot.osuweb.get_latest_ranked_beatmapsets()
         if fresh_entries:
             for mapset_metadata in fresh_entries["beatmapsets"]:
                 mapset_id = mapset_metadata["id"]
@@ -71,7 +70,7 @@ class RankFeed(commands.Cog):
                         rankfeed_history_check = await cursor.fetchall()
                     if rankfeed_history_check:
                         print(time.strftime("%X %x %Z") + " | performing rankfeed check")
-                        fresh_entries = await osuweb.get_latest_ranked_beatmapsets()
+                        fresh_entries = await self.bot.osuweb.get_latest_ranked_beatmapsets()
                         if fresh_entries:
                             for mapset_metadata in fresh_entries["beatmapsets"]:
                                 mapset_id = mapset_metadata["id"]
