@@ -120,8 +120,9 @@ class RSSFeed(commands.Cog):
         print("RSSFeed Loop launched!")
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
-            await asyncio.sleep(10)
             try:
+                await asyncio.sleep(10)
+
                 async with await self.bot.db.execute("SELECT url FROM rssfeed_tracklist") as cursor:
                     rssfeed_entries = await cursor.fetchall()
                 if not rssfeed_entries:
