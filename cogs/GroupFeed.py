@@ -66,24 +66,24 @@ class GroupFeed(commands.Cog):
                 difference.append(i)
         return difference
 
-    async def compare(self, result, lookup_value, table_name, lookup_key, update_db=True, reverse=False):
-        async with await self.bot.db.execute(f"SELECT {lookup_key} FROM {table_name} WHERE {lookup_key} = ?",
+    async def compare(self, result, lookup_value, update_db=True, reverse=False):
+        async with await self.bot.db.execute("SELECT group_id FROM groupfeed_json_data WHERE group_id = ?",
                                              [lookup_value]) as cursor:
             check_is_already_in_table = await cursor.fetchall()
         if not check_is_already_in_table:
-            await self.bot.db.execute(f"INSERT INTO {table_name} VALUES (?,?)", [lookup_value, json.dumps(result)])
+            await self.bot.db.execute("INSERT INTO groupfeed_json_data VALUES (?,?)",
+                                      [lookup_value, json.dumps(result)])
             await self.bot.db.commit()
             return None
         else:
             if result:
-                async with await self.bot.db.execute(f"SELECT contents FROM {table_name} "
-                                                     f"WHERE {lookup_key} = ?",
+                async with await self.bot.db.execute("SELECT contents FROM groupfeed_json_data WHERE group_id = ?",
                                                      [lookup_value]) as cursor:
                     db_contents = await cursor.fetchall()
                 local_data = json.loads(db_contents[0][0])
                 comparison = await self.compare_lists(result, local_data, reverse)
                 if update_db:
-                    await self.bot.db.execute(f"UPDATE {table_name} SET contents = ? WHERE {lookup_key} = ?",
+                    await self.bot.db.execute("UPDATE groupfeed_json_data SET contents = ? WHERE group_id = ?",
                                               [json.dumps(result), lookup_value])
                     await self.bot.db.commit()
                 if comparison:
@@ -99,8 +99,8 @@ class GroupFeed(commands.Cog):
         user_list = []
         for i in group_members:
             user_list.append(str(i["id"]))
-        check_additions = await self.compare(user_list, group_id, "groupfeed_json_data", "group_id", False, False)
-        check_removals = await self.compare(user_list, group_id, "groupfeed_json_data", "group_id", True, True)
+        check_additions = await self.compare(user_list, group_id, False, False)
+        check_removals = await self.compare(user_list, group_id, True, True)
         if check_additions:
             for new_user in check_additions:
                 changes.append(["added", new_user, "Someone"])
