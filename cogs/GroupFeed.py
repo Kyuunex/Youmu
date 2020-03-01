@@ -73,20 +73,16 @@ class GroupFeed(commands.Cog):
         fresh_entries = self.unnest_group_member_id(fresh_entries)
 
         # this piece of code checks if there are new members that are not in local db
+        cached_entries = wrappers.unnest_list(cached_entries)
+
         for fresh_member in fresh_entries:
-            async with await self.bot.db.execute("SELECT * FROM groupfeed_group_members "
-                                                 "WHERE osu_id = ? AND group_id = ?",
-                                                 [str(fresh_member), str(group_id)]) as cursor:
-                is_online_member_already_in_db = await cursor.fetchall()
-            if not is_online_member_already_in_db:
+            if not str(fresh_member) in cached_entries:
                 await self.bot.db.execute("INSERT INTO groupfeed_group_members VALUES (?, ?)",
                                           [str(fresh_member), str(group_id)])
                 changes.append([True, str(fresh_member)])
 
         await self.bot.db.commit()
         await asyncio.sleep(5)
-
-        cached_entries = wrappers.unnest_list(cached_entries)
 
         # this piece of code checks if there are members in db but not online
         for cached_member in cached_entries:
