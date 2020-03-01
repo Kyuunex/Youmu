@@ -38,7 +38,7 @@ def create_tables():
         c.execute("CREATE TABLE usereventfeed_history (osu_id, event_id, timestamp)")
 
         c.execute("CREATE TABLE groupfeed_channel_list (channel_id)")
-        c.execute("CREATE TABLE groupfeed_members (osu_id, username, group_id)")
-        c.execute("CREATE TABLE groupfeed_json_data (group_id, contents)")
+        c.execute("CREATE TABLE groupfeed_group_members (osu_id, group_id)")
+        c.execute("CREATE TABLE groupfeed_member_info (osu_id, username, country)")
         conn.commit()
         conn.close()
