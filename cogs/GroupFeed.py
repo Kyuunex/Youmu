@@ -2,6 +2,7 @@ import time
 import asyncio
 import discord
 from discord.ext import commands
+from discord.utils import escape_markdown
 from modules import permissions
 from modules import wrappers
 
@@ -34,18 +35,42 @@ class GroupFeed(commands.Cog):
             self.bot.loop.create_task(self.groupfeed_background_loop())
         )
 
-    @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel", description="")
+    @commands.command(name="groupfeed_add", brief="Add a groupfeed in the current channel")
     @commands.check(permissions.is_admin)
+    @commands.check(permissions.is_not_ignored)
     async def groupfeed_add(self, ctx):
         await self.bot.db.execute("INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
-    @commands.command(name="groupfeed_remove", brief="Remove a groupfeed from the current channel", description="")
+    @commands.command(name="groupfeed_remove", brief="Remove a groupfeed from the current channel")
+    @commands.check(permissions.is_admin)
+    @commands.check(permissions.is_not_ignored)
     async def groupfeed_remove(self, ctx):
         await self.bot.db.execute("DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
+
+    @commands.command(name="groupfeed_channel_list", brief="Print GroupFeed enabled channels")
+    @commands.check(permissions.is_admin)
+    @commands.check(permissions.is_not_ignored)
+    async def groupfeed_channel_list(self, ctx):
+        """
+        Show a list of channels where GroupFeed is enabled.
+        """
+
+        async with await self.bot.db.execute("SELECT channel_id FROM groupfeed_channel_list") as cursor:
+            groupfeed_channel_list = await cursor.fetchall()
+        if not groupfeed_channel_list:
+            await ctx.send("GroupFeed channel list is empty")
+            return
+
+        buffer = ":notepad_spiral: **GroupFeed Channel list**\n\n"
+        for one_channel in groupfeed_channel_list:
+            buffer += f"<#{one_channel[0]}>\n"
+
+        embed = discord.Embed(color=0xff6781)
+        await wrappers.send_large_embed(ctx.channel, embed, buffer)
 
     def unnest_group_member_id(self, group_members):
         buffer = []
@@ -111,7 +136,8 @@ class GroupFeed(commands.Cog):
 
         if not user:
             # user is restricted
-            async with await self.bot.db.execute("SELECT * FROM groupfeed_member_info WHERE osu_id = ?",
+            async with await self.bot.db.execute("SELECT osu_id, username, country FROM groupfeed_member_info "
+                                                 "WHERE osu_id = ?",
                                                  [str(event[1])]) as cursor:
                 cached_info = await cursor.fetchone()
             if not cached_info:
@@ -120,8 +146,11 @@ class GroupFeed(commands.Cog):
             description_template = "%s **%s**\n**has gotten restricted lol**\nand has been removed from\nthe **%s**"
             color = 0x9e0000
 
-        flag_sign = f":flag_{user.country.lower()}:"
-        username = user.name
+        if user.country:
+            flag_sign = f":flag_{user.country.lower()}:"
+        else:
+            flag_sign = f":flag_white:"
+        username = escape_markdown(user.name)
 
         what_group = f"[{group_name}](https://osu.ppy.sh/groups/{group_id})"
         what_user = f"[{username}](https://osu.ppy.sh/users/{event[1]})"
@@ -142,13 +171,18 @@ class GroupFeed(commands.Cog):
 
         for fresh_member in fresh_entries:
             if not str(fresh_member["id"]) in cached_info:
+                try:
+                    country_code = fresh_member["country"]["code"]
+                except:
+                    # thanks notbakaneko
+                    country_code = "white"  # :flag_white: is a placeholder flag
                 await self.bot.db.execute("INSERT INTO groupfeed_member_info VALUES (?, ?, ?)",
                                           [str(fresh_member["id"]), str(fresh_member["username"]),
-                                           str(fresh_member["country"]["code"])])
+                                           str(country_code)])
         await self.bot.db.commit()
 
     async def check_group(self, channel_list, group_id):
-        fresh_entries = await self.bot.osuweb.get_group_members(group_id)
+        fresh_entries = await self.bot.osuweb.scrape_group_members(group_id)
         if not fresh_entries:
             print("groupfeed connection problems?")
             return None

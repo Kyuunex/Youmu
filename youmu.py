@@ -2,6 +2,8 @@
 
 from discord.ext import commands
 import aiosqlite
+import sys
+import os
 
 from aioosuapi import aioosuapi
 from aioosuwebapi import aioosuwebapi
@@ -10,7 +12,22 @@ from modules import first_run
 
 from modules.connections import bot_token as bot_token
 from modules.connections import osu_api_key as osu_api_key
+from modules.connections import client_id as client_id
+from modules.connections import client_secret as client_secret
 from modules.connections import database_file as database_file
+
+user_extensions_directory = "user_extensions"
+
+if not os.path.exists("data"):
+    print("Please configure this bot according to readme file.")
+    sys.exit("data folder and it's contents are missing")
+if not os.path.exists(user_extensions_directory):
+    os.makedirs(user_extensions_directory)
+
+if os.environ.get('YOUMU_PREFIX'):
+    command_prefix = os.environ.get('YOUMU_PREFIX')
+else:
+    command_prefix = "'"
 
 first_run.create_tables()
 
@@ -31,11 +48,20 @@ class Youmu(commands.Bot):
         self.description = f"Youmu {self.app_version}"
         self.database_file = database_file
         self.osu = aioosuapi(osu_api_key)
-        self.osuweb = aioosuwebapi()
+        self.osuweb = aioosuwebapi(client_id, client_secret)
 
         for extension in initial_extensions:
             try:
                 self.load_extension(extension)
+            except Exception as e:
+                print(e)
+        for user_extension in os.listdir(user_extensions_directory):
+            if not user_extension.endswith(".py"):
+                continue
+            extension_name = user_extension.replace(".py", "")
+            try:
+                self.load_extension(f"{user_extensions_directory}.{extension_name}")
+                print(f"User extension {extension_name} loaded")
             except Exception as e:
                 print(e)
 
@@ -49,12 +75,19 @@ class Youmu(commands.Bot):
         # This prevents any task still running due to having long sleep time.
         for task in self.background_tasks:
             task.cancel()
-        
+
+        # Close osu web api session
+        await self.osuweb.close()
+
         # Close connection to the database
-        await self.db.close()
+        if self.db:
+            await self.db.close()
 
         # Run actual discord.py close.
-        await super().close()
+        # await super().close()
+
+        # for now let's just quit() since the thing above does not work :c
+        quit()
 
     async def on_ready(self):
         print("Logged in as")
@@ -64,5 +97,5 @@ class Youmu(commands.Bot):
         await first_run.add_admins(self)
 
 
-client = Youmu(command_prefix=".")
+client = Youmu(command_prefix=command_prefix)
 client.run(bot_token)
