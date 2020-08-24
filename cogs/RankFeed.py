@@ -123,7 +123,7 @@ class RankFeed(commands.Cog):
                     if check_is_already_in_history:
                         continue
 
-                    embed = await osuwebembed.beatmapset(mapset_metadata, color=0xffc85a)
+                    embed = await osuwebembed.beatmapset_array(mapset_metadata, color=0xffc85a)
                     if not embed:
                         print("rankfeed embed returned nothing. this should not happen")
                         continue
