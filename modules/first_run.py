@@ -50,7 +50,7 @@ def create_tables():
         """)
         c.execute("""
         CREATE TABLE "groupfeed_member_info" (
-            "osu_id"    INTEGER NOT NULL,
+            "osu_id"    INTEGER NOT NULL UNIQUE,
             "username"    TEXT NOT NULL,
             "country"    TEXT NOT NULL
         )
@@ -96,13 +96,13 @@ def create_tables():
         c.execute("""
         CREATE TABLE "usereventfeed_history" (
             "osu_id"    INTEGER NOT NULL,
-            "event_id"    INTEGER NOT NULL,
+            "event_id"    INTEGER NOT NULL UNIQUE,
             "timestamp"    INTEGER NOT NULL
         )
         """)
         c.execute("""
         CREATE TABLE "usereventfeed_tracklist" (
-            "osu_id"    INTEGER NOT NULL
+            "osu_id"    INTEGER NOT NULL UNIQUE
         )
         """)
         conn.commit()
