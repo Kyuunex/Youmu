@@ -20,7 +20,8 @@ class UserEventFeed(commands.Cog):
     async def track(self, ctx, user_id):
         """
         This will keep track of mapping activity for a specified user and send it to the current channel.
-        :param user_id: osu! account ID
+
+        user_id: osu! account ID
         """
 
         user = await self.bot.osu.get_user(u=user_id)
@@ -62,7 +63,8 @@ class UserEventFeed(commands.Cog):
     async def untrack(self, ctx, user_id):
         """
         Stop tracking mapping activity of a specified user in the current channel
-        :param user_id: osu! account ID
+        
+        user_id: osu! account ID
         """
 
         user = await self.bot.osu.get_user(u=user_id)
