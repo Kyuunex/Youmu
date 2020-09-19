@@ -39,7 +39,7 @@ class GroupFeed(commands.Cog):
     @commands.check(permissions.is_admin)
     @commands.check(permissions.is_not_ignored)
     async def groupfeed_add(self, ctx):
-        await self.bot.db.execute("INSERT INTO groupfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
+        await self.bot.db.execute("INSERT INTO groupfeed_channel_list VALUES (?)", [int(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
@@ -47,7 +47,7 @@ class GroupFeed(commands.Cog):
     @commands.check(permissions.is_admin)
     @commands.check(permissions.is_not_ignored)
     async def groupfeed_remove(self, ctx):
-        await self.bot.db.execute("DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
+        await self.bot.db.execute("DELETE FROM groupfeed_channel_list WHERE channel_id = ?", [int(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
@@ -75,12 +75,12 @@ class GroupFeed(commands.Cog):
     def unnest_group_member_id(self, group_members):
         buffer = []
         for one_member in group_members:
-            buffer.append(str(one_member["id"]))
+            buffer.append(int(one_member["id"]))
         return buffer
 
     async def get_changes(self, fresh_entries, group_id):
         async with await self.bot.db.execute("SELECT osu_id FROM groupfeed_group_members WHERE group_id = ?",
-                                             [str(group_id)]) as cursor:
+                                             [int(group_id)]) as cursor:
             cached_entries = await cursor.fetchall()
         if not cached_entries:
             # if we are here, it means this group has no members, which means it was recently tracked. 
@@ -89,7 +89,7 @@ class GroupFeed(commands.Cog):
 
             for one_member in fresh_entries:
                 await self.bot.db.execute("INSERT INTO groupfeed_group_members VALUES (?, ?)",
-                                          [str(one_member["id"]), str(group_id)])
+                                          [int(one_member["id"]), int(group_id)])
             await self.bot.db.commit()
             return []
 
@@ -101,10 +101,10 @@ class GroupFeed(commands.Cog):
         cached_entries = wrappers.unnest_list(cached_entries)
 
         for fresh_member in fresh_entries:
-            if not str(fresh_member) in cached_entries:
+            if not int(fresh_member) in cached_entries:
                 await self.bot.db.execute("INSERT INTO groupfeed_group_members VALUES (?, ?)",
-                                          [str(fresh_member), str(group_id)])
-                changes.append([True, str(fresh_member)])
+                                          [int(fresh_member), int(group_id)])
+                changes.append([True, int(fresh_member)])
 
         await self.bot.db.commit()
         await asyncio.sleep(5)
@@ -113,7 +113,7 @@ class GroupFeed(commands.Cog):
         for cached_member in cached_entries:
             if not str(cached_member) in fresh_entries:
                 await self.bot.db.execute("DELETE FROM groupfeed_group_members WHERE osu_id = ? AND group_id = ?",
-                                          [str(cached_member), str(group_id)])
+                                          [int(cached_member), int(group_id)])
                 changes.append([False, str(cached_member)])
 
         await self.bot.db.commit()
@@ -138,7 +138,7 @@ class GroupFeed(commands.Cog):
             # user is restricted
             async with await self.bot.db.execute("SELECT osu_id, username, country FROM groupfeed_member_info "
                                                  "WHERE osu_id = ?",
-                                                 [str(event[1])]) as cursor:
+                                                 [int(event[1])]) as cursor:
                 cached_info = await cursor.fetchone()
             if not cached_info:
                 cached_info = (str(event[1]), "someone???", "white")
@@ -177,7 +177,7 @@ class GroupFeed(commands.Cog):
                     # thanks notbakaneko
                     country_code = "white"  # :flag_white: is a placeholder flag
                 await self.bot.db.execute("INSERT INTO groupfeed_member_info VALUES (?, ?, ?)",
-                                          [str(fresh_member["id"]), str(fresh_member["username"]),
+                                          [int(fresh_member["id"]), str(fresh_member["username"]),
                                            str(country_code)])
         await self.bot.db.commit()
 

@@ -37,19 +37,20 @@ class BotManagement(commands.Cog):
     @commands.command(name="make_admin", brief="Add a user to a bot admin list")
     @commands.check(permissions.is_owner)
     @commands.check(permissions.is_not_ignored)
-    async def make_admin(self, ctx, user_id: str, perms="0"):
+    async def make_admin(self, ctx, user_id: str, perms=0):
         """
         Adds a user to a list of users the bot will treat as admins.
         This will apply after a restart.
-        :param user_id: This must be an ID of a discord account.
-        :param perms: This must be either 0 or 1. 1 gives owner perms. 0 gives admin perms.
+
+        user_id: This must be an ID of a discord account.
+        perms: This must be either 0 or 1. 1 gives owner perms. 0 gives admin perms.
         """
 
         if not user_id.isdigit():
             await ctx.send("user_id must be user's id, which is all numbers.")
             return
 
-        await self.bot.db.execute("INSERT INTO admins VALUES (?, ?)", [str(user_id), str(perms)])
+        await self.bot.db.execute("INSERT INTO admins VALUES (?, ?)", [int(user_id), int(perms)])
         await self.bot.db.commit()
 
         await ctx.send(":ok_hand:")
@@ -91,19 +92,20 @@ class BotManagement(commands.Cog):
     @commands.command(name="ignore_user", brief="Blacklist a user from using the bot")
     @commands.check(permissions.is_owner)
     @commands.check(permissions.is_not_ignored)
-    async def ignore_user(self, ctx, user_id, *, reason=""):
+    async def ignore_user(self, ctx, user_id: str, *, reason="No reason provided"):
         """
         Add a user to a list of users the bot will ignore commands from.
         This will apply after a restart.
-        :param user_id: This must be an ID of a discord account.
-        :param reason: Optional parameter, meant to be a reason why the user was blacklisted.
+
+        user_id: This must be an ID of a discord account.
+        reason: Optional parameter, meant to be a reason why the user was blacklisted.
         """
 
         if not user_id.isdigit():
             await ctx.send("user_id must be user's id, which is all numbers.")
             return
 
-        await self.bot.db.execute("INSERT INTO ignored_users VALUES (?, ?)", [str(user_id), str(reason)])
+        await self.bot.db.execute("INSERT INTO ignored_users VALUES (?, ?)", [int(user_id), str(reason)])
         await self.bot.db.commit()
 
         await ctx.send(":ok_hand:")
@@ -142,7 +144,8 @@ class BotManagement(commands.Cog):
     async def sql(self, ctx, *, query):
         """
         This executes the passed string as an SQL command.
-        :param query: an SQL command.
+
+        query: an SQL command.
         """
 
         try:
@@ -204,29 +207,12 @@ class BotManagement(commands.Cog):
     async def set_activity(self, ctx, *, string):
         """
         Set "Playing" activity.
-        :param string: Playing what goes here.
+        
+        string: Playing what goes here.
         """
 
         activity = discord.Game(string)
         await self.bot.change_presence(activity=activity)
-
-        await ctx.send(":ok_hand:")
-
-    @commands.command(name="config", brief="Insert a config in db")
-    @commands.check(permissions.is_owner)
-    @commands.check(permissions.is_not_ignored)
-    async def config(self, ctx, setting, parent, value, flag="0"):
-        """
-        This inserts a config in the config table in the database.
-        Config table is rarely used though,
-        so this command and the config table may just disappear one day.
-        Read this for more info:
-        https://github.com/Kyuunex/Momiji/blob/master/configuration.md
-        """
-
-        await self.bot.db.execute("INSERT INTO config VALUES (?, ?, ?, ?)",
-                                  [str(setting), str(parent), str(value), str(flag)])
-        await self.bot.db.commit()
 
         await ctx.send(":ok_hand:")
 
@@ -241,8 +227,8 @@ class BotManagement(commands.Cog):
         This will fail if the database file size is more than 8 MB.
         """
 
-        async with self.bot.db.execute("SELECT value FROM config WHERE setting = ? and value = ?",
-                                       ["db_dump_channel", str(ctx.channel.id)]) as cursor:
+        async with self.bot.db.execute("SELECT channel_id FROM channels WHERE setting = ? and channel_id = ?",
+                                       ["db_dump", int(ctx.channel.id)]) as cursor:
             db_dump_channel = await cursor.fetchone()
 
         if not db_dump_channel:

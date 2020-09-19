@@ -31,21 +31,21 @@ class RankFeed(commands.Cog):
         for mapset_metadata in fresh_entries["beatmapsets"]:
             mapset_id = mapset_metadata["id"]
             async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
-                                                 [str(mapset_id)]) as cursor:
+                                                 [int(mapset_id)]) as cursor:
                 check_is_already_in_history = await cursor.fetchone()
             if not check_is_already_in_history:
-                await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
+                await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [int(mapset_id)])
 
         await self.bot.db.commit()
 
         async with await self.bot.db.execute("SELECT channel_id FROM rankfeed_channel_list WHERE channel_id = ?",
-                                             [str(ctx.channel.id)]) as cursor:
+                                             [int(ctx.channel.id)]) as cursor:
             check_is_channel_already_tracked = await cursor.fetchone()
         if check_is_channel_already_tracked:
             await ctx.send("Rankfeed is already tracked in this channel")
             return
 
-        await self.bot.db.execute("INSERT INTO rankfeed_channel_list VALUES (?)", [str(ctx.channel.id)])
+        await self.bot.db.execute("INSERT INTO rankfeed_channel_list VALUES (?)", [int(ctx.channel.id)])
         await ctx.send(":ok_hand:")
 
         await self.bot.db.commit()
@@ -58,7 +58,7 @@ class RankFeed(commands.Cog):
         Stop sending information about the latest ranked maps in the current channel
         """
 
-        await self.bot.db.execute("DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [str(ctx.channel.id)])
+        await self.bot.db.execute("DELETE FROM rankfeed_channel_list WHERE channel_id = ?", [int(ctx.channel.id)])
         await self.bot.db.commit()
         await ctx.send(":ok_hand:")
 
@@ -118,7 +118,7 @@ class RankFeed(commands.Cog):
 
                     mapset_id = mapset_metadata["id"]
                     async with await self.bot.db.execute("SELECT mapset_id FROM rankfeed_history WHERE mapset_id = ?",
-                                                         [str(mapset_id)]) as cursor:
+                                                         [int(mapset_id)]) as cursor:
                         check_is_already_in_history = await cursor.fetchone()
                     if check_is_already_in_history:
                         continue
@@ -132,7 +132,7 @@ class RankFeed(commands.Cog):
                         channel = self.bot.get_channel(int(rankfeed_channel_id[0]))
                         if not channel:
                             await self.bot.db.execute("DELETE FROM rankfeed_channel_list WHERE channel_id = ?",
-                                                      [str(rankfeed_channel_id[0])])
+                                                      [int(rankfeed_channel_id[0])])
                             await self.bot.db.commit()
                             print(f"channel with id {rankfeed_channel_id[0]} no longer exists "
                                   "so I am removing it from the list")
@@ -140,7 +140,7 @@ class RankFeed(commands.Cog):
 
                         await channel.send(embed=embed)
 
-                    await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [str(mapset_id)])
+                    await self.bot.db.execute("INSERT INTO rankfeed_history VALUES (?)", [int(mapset_id)])
                     await self.bot.db.commit()
 
                 print(time.strftime("%X %x %Z") + " | finished rankfeed check")

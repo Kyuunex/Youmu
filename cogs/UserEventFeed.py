@@ -30,29 +30,29 @@ class UserEventFeed(commands.Cog):
             return
 
         async with await self.bot.db.execute("SELECT osu_id FROM usereventfeed_tracklist WHERE osu_id = ?",
-                                             [str(user.id)]) as cursor:
+                                             [int(user.id)]) as cursor:
             check_is_already_tracked = await cursor.fetchone()
         if not check_is_already_tracked:
-            await self.bot.db.execute("INSERT INTO usereventfeed_tracklist VALUES (?)", [str(user.id)])
+            await self.bot.db.execute("INSERT INTO usereventfeed_tracklist VALUES (?)", [int(user.id)])
 
         for event in user.events:
             async with await self.bot.db.execute("SELECT event_id FROM usereventfeed_history WHERE event_id = ?",
-                                                 [str(event.id)]) as cursor:
+                                                 [int(event.id)]) as cursor:
                 check_is_already_in_history = await cursor.fetchone()
             if not check_is_already_in_history:
                 await self.bot.db.execute("INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
-                                          [str(user.id), str(event.id), str(int(time.time()))])
+                                          [int(user.id), int(event.id), int(time.time())])
 
         async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels "
                                              "WHERE channel_id = ? AND osu_id = ?",
-                                             [str(ctx.channel.id), str(user.id)]) as cursor:
+                                             [int(ctx.channel.id), int(user.id)]) as cursor:
             check_is_channel_already_tracked = await cursor.fetchone()
         if check_is_channel_already_tracked:
             await ctx.send(f"User `{user.name}` is already tracked in this channel")
             return
 
         await self.bot.db.execute("INSERT INTO usereventfeed_channels VALUES (?, ?)",
-                                  [str(user.id), str(ctx.channel.id)])
+                                  [int(user.id), int(ctx.channel.id)])
         await ctx.send(f"Tracked `{user.name}` in this channel")
 
         await self.bot.db.commit()
@@ -75,7 +75,7 @@ class UserEventFeed(commands.Cog):
             user_name = user_id
 
         await self.bot.db.execute("DELETE FROM usereventfeed_channels WHERE osu_id = ? AND channel_id = ? ",
-                                  [str(user_id), str(ctx.channel.id)])
+                                  [int(user_id), int(ctx.channel.id)])
         await self.bot.db.commit()
 
         await ctx.send(f"`{user_name}` is no longer tracked in this channel")
@@ -100,7 +100,7 @@ class UserEventFeed(commands.Cog):
         buffer = ":notepad_spiral: **Track list**\n\n"
         for one_entry in tracklist:
             async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels WHERE osu_id = ?",
-                                                 [str(one_entry[0])]) as cursor:
+                                                 [int(one_entry[0])]) as cursor:
                 destination_list = await cursor.fetchall()
             destination_list_str = ""
             for destination_id in destination_list:
@@ -140,16 +140,16 @@ class UserEventFeed(commands.Cog):
         user = await self.bot.osu.get_user(u=user_id, event_days="2")
         if not user:
             print(f"{user_id} is restricted, untracking everywhere")
-            await self.bot.db.execute("DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)])
-            await self.bot.db.execute("DELETE FROM usereventfeed_channels WHERE osu_id = ?", [str(user.id)])
+            await self.bot.db.execute("DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [int(user.id)])
+            await self.bot.db.execute("DELETE FROM usereventfeed_channels WHERE osu_id = ?", [int(user.id)])
             await self.bot.db.commit()
             return
 
         async with await self.bot.db.execute("SELECT channel_id FROM usereventfeed_channels WHERE osu_id = ?",
-                                             [str(user.id)]) as cursor:
+                                             [int(user.id)]) as cursor:
             channel_list = await cursor.fetchall()
         if not channel_list:
-            await self.bot.db.execute("DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [str(user.id)])
+            await self.bot.db.execute("DELETE FROM usereventfeed_tracklist WHERE osu_id = ?", [int(user.id)])
             await self.bot.db.commit()
             print(f"{user.id} is not tracked in any channel so I am untracking them")
             return
@@ -161,13 +161,13 @@ class UserEventFeed(commands.Cog):
         print(time.strftime("%X %x %Z") + f" | currently checking {user.name}")
         for event in user.events:
             async with await self.bot.db.execute("SELECT event_id FROM usereventfeed_history WHERE event_id = ?",
-                                                 [str(event.id)]) as cursor:
+                                                 [int(event.id)]) as cursor:
                 check_is_entry_in_history = await cursor.fetchone()
             if check_is_entry_in_history:
                 continue
 
             await self.bot.db.execute("INSERT INTO usereventfeed_history VALUES (?, ?, ?)",
-                                      [str(user.id), str(event.id), str(int(time.time()))])
+                                      [int(user.id), int(event.id), int(time.time())])
             await self.bot.db.commit()
 
             event_color = await self.get_event_color(event.display_text)
@@ -186,7 +186,7 @@ class UserEventFeed(commands.Cog):
                 channel = self.bot.get_channel(int(channel_id))
                 if not channel:
                     await self.bot.db.execute("DELETE FROM usereventfeed_channels WHERE channel_id = ?",
-                                              [str(channel_id)])
+                                              [int(channel_id)])
                     await self.bot.db.commit()
                     print(f"channel with id {channel_id} no longer exists "
                           "so I am removing it from the list")
