@@ -12,7 +12,7 @@ setup(
         'youmu.reusables'
     ],
     version=VERSION,
-    description='The heart of The Mapset Management Server on Discord.',
+    description='An osu! Discord bot that posts newly ranked maps, NAT/BN changes, or map uploads of users you track.',
     author='Kyuunex',
     author_email='kyuunex@protonmail.ch',
     url='https://github.com/Kyuunex/Youmu',
