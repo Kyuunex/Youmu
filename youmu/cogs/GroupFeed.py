@@ -6,6 +6,7 @@ from discord.utils import escape_markdown
 from youmu.modules import permissions
 from youmu.reusables import send_large_message
 from youmu.reusables import list_helpers
+from youmu.embeds import GroupFeed as GroupFeedEmbeds
 
 
 class FakeUser:
@@ -73,11 +74,59 @@ class GroupFeed(commands.Cog):
         embed = discord.Embed(color=0xff6781)
         await send_large_message.send_large_embed(ctx.channel, embed, buffer)
 
-    def unnest_group_member_id(self, group_members):
-        buffer = []
-        for one_member in group_members:
-            buffer.append(int(one_member["id"]))
-        return buffer
+    async def groupfeed_background_loop(self):
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            await asyncio.sleep(10)
+
+            async with await self.bot.db.execute("SELECT channel_id FROM groupfeed_channel_list") as cursor:
+                channel_list = await cursor.fetchall()
+            if not channel_list:
+                await asyncio.sleep(1600)
+                continue
+
+            print(time.strftime("%X %x %Z") + " | performing groupfeed check")
+
+            channel_list = list_helpers.unnest_list(channel_list)
+
+            for group_id, group_name in self.group_list:
+                await self.check_group(channel_list, group_id)
+                await asyncio.sleep(120)
+
+            print(time.strftime("%X %x %Z") + " | finished groupfeed check")
+
+            await asyncio.sleep(1600)
+
+    async def check_group(self, channel_list, group_id):
+        fresh_entries = await self.bot.osuweb.scrape_group_members_array(group_id)
+        if not fresh_entries:
+            print("groupfeed connection problems?")
+            return
+
+        await self.populate_member_info(fresh_entries)
+
+        events = await self.get_changes(fresh_entries, group_id)
+
+        if events:
+            for event in events:
+                await self.execute_event(channel_list, event, group_id)
+
+    async def populate_member_info(self, fresh_entries):
+        async with await self.bot.db.execute("SELECT osu_id FROM groupfeed_member_info") as cursor:
+            cached_info = await cursor.fetchall()
+        cached_info = list_helpers.unnest_list(cached_info)
+
+        for fresh_member in fresh_entries:
+            if not str(fresh_member["id"]) in cached_info:
+                try:
+                    country_code = fresh_member["country"]["code"]
+                except:
+                    # thanks notbakaneko
+                    country_code = "white"  # :flag_white: is a placeholder flag
+                await self.bot.db.execute("INSERT INTO groupfeed_member_info VALUES (?, ?, ?)",
+                                          [int(fresh_member["id"]), str(fresh_member["username"]),
+                                           str(country_code)])
+        await self.bot.db.commit()
 
     async def get_changes(self, fresh_entries, group_id):
         async with await self.bot.db.execute("SELECT osu_id FROM groupfeed_group_members WHERE group_id = ?",
@@ -159,97 +208,23 @@ class GroupFeed(commands.Cog):
 
         description = description_template % (flag_sign, what_user, what_group)
 
-        embed = await self.group_member(thumbnail_url, description, color)
+        embed = await GroupFeedEmbeds.group_member(thumbnail_url, description, color)
         for channel_id in channel_list:
             channel = self.bot.get_channel(int(channel_id))
             if channel:
                 await channel.send(embed=embed)
 
-    async def populate_member_info(self, fresh_entries):
-        async with await self.bot.db.execute("SELECT osu_id FROM groupfeed_member_info") as cursor:
-            cached_info = await cursor.fetchall()
-        cached_info = list_helpers.unnest_list(cached_info)
-
-        for fresh_member in fresh_entries:
-            if not str(fresh_member["id"]) in cached_info:
-                try:
-                    country_code = fresh_member["country"]["code"]
-                except:
-                    # thanks notbakaneko
-                    country_code = "white"  # :flag_white: is a placeholder flag
-                await self.bot.db.execute("INSERT INTO groupfeed_member_info VALUES (?, ?, ?)",
-                                          [int(fresh_member["id"]), str(fresh_member["username"]),
-                                           str(country_code)])
-        await self.bot.db.commit()
-
-    async def check_group(self, channel_list, group_id):
-        fresh_entries = await self.bot.osuweb.scrape_group_members_array(group_id)
-        if not fresh_entries:
-            print("groupfeed connection problems?")
-            return None
-
-        await self.populate_member_info(fresh_entries)
-
-        events = await self.get_changes(fresh_entries, group_id)
-
-        if events:
-            for event in events:
-                await self.execute_event(channel_list, event, group_id)
-
-    async def groupfeed_background_loop(self):
-        await self.bot.wait_until_ready()
-        while not self.bot.is_closed():
-            try:
-                await asyncio.sleep(10)
-
-                async with await self.bot.db.execute("SELECT channel_id FROM groupfeed_channel_list") as cursor:
-                    channel_list = await cursor.fetchall()
-                if not channel_list:
-                    await asyncio.sleep(1600)
-                    continue
-
-                print(time.strftime("%X %x %Z") + " | performing groupfeed check")
-
-                channel_list = list_helpers.unnest_list(channel_list)
-
-                await self.check_group(channel_list, "7")
-                await asyncio.sleep(120)
-                await self.check_group(channel_list, "28")
-                await asyncio.sleep(5)
-                await self.check_group(channel_list, "32")
-                await asyncio.sleep(120)
-                await self.check_group(channel_list, "4")
-                await asyncio.sleep(120)
-                await self.check_group(channel_list, "11")
-                await asyncio.sleep(120)
-                await self.check_group(channel_list, "16")
-                await asyncio.sleep(120)
-                await self.check_group(channel_list, "22")
-
-                print(time.strftime("%X %x %Z") + " | finished groupfeed check")
-
-                await asyncio.sleep(1600)
-            except Exception as e:
-                print(time.strftime("%X %x %Z"))
-                print("in groupfeed_background_loop")
-                print(e)
-                await asyncio.sleep(3600)
+    def unnest_group_member_id(self, group_members):
+        buffer = []
+        for one_member in group_members:
+            buffer.append(int(one_member["id"]))
+        return buffer
 
     def get_group_name(self, group_id):
         for group in self.group_list:
             if int(group_id) == group[0]:
                 return str(group[1])
         return "Unknown group"
-
-    async def group_member(self, thumbnail_url, description, color):
-        embed = discord.Embed(
-            description=description,
-            color=color
-        )
-        embed.set_thumbnail(
-            url=thumbnail_url
-        )
-        return embed
 
 
 def setup(bot):
