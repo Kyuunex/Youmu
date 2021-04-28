@@ -2,4 +2,5 @@ discord.py[voice]
 feedparser
 git+https://github.com/Kyuunex/aioosuapi.git@v1
 git+https://github.com/Kyuunex/aioosuapi.git@v2
-
+psutil
+aiohttp

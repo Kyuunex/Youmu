@@ -20,6 +20,8 @@ setup(
         'discord.py[voice]',
         'feedparser',
         'aioosuapi @ git+https://github.com/Kyuunex/aioosuapi.git@v1',
-        'aioosuwebapi @ git+https://github.com/Kyuunex/aioosuapi.git@v2'
+        'aioosuwebapi @ git+https://github.com/Kyuunex/aioosuapi.git@v2',
+        'psutil',
+        'aiohttp'
     ],
 )
