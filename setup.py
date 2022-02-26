@@ -19,8 +19,8 @@ setup(
     install_requires=[
         'discord.py[voice]==1.7.3',
         'feedparser',
-        'aioosuapi @ git+https://github.com/Kyuunex/aioosuapi.git@1.2.1',
-        'aioosuwebapi @ git+https://github.com/Kyuunex/aioosuapi.git@2.0.0-placeholder.5',
+        'aioosuapi @ git+https://github.com/Kyuunex/aioosuapi.git@1.2.4',
+        'aioosuwebapi @ git+https://github.com/Kyuunex/aioosuapi.git@2.0.0-dev6',
         'psutil',
         'aiohttp'
     ],
